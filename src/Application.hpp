@@ -1,7 +1,7 @@
 /**
  * Application.cpp
  * Contributors:
- *      * Arthur Sonzogni (author)
+ *      * jaccen  Email:jaccen2007@163.com
  * Licence:
  *      * MIT
  */
