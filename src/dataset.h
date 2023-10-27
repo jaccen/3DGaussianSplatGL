@@ -4,8 +4,6 @@
 #include <vector>
 #include <Eigen/Dense>
 
-namespace viewer::dataset {
-
 struct Splat {
     // Must match splat buffer in `shaders/shader.vs`
     // Must be aligned according to std430 layout.
@@ -52,4 +50,3 @@ private:
 };
 
 Dataset from_ply(const std::string& filename);
-}

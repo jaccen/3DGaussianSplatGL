@@ -1,87 +1,114 @@
 #include "ply.h"
 #include "logging.h"
+#include<filesystem>
+using namespace std::filesystem;
 
-#include <regex>
-
-namespace viewer::ply {
-
-PlyType ply_type_from_string(const std::string& t) {
-    if (t == "double") return PlyType::Double;
-    if (t == "float") return PlyType::Float;
-    if (t == "int") return PlyType::Int;
-    if (t == "uint") return PlyType::UInt;
-    if (t == "short") return PlyType::Short;
-    if (t == "ushort") return PlyType::UShort;
-    if (t == "char") return PlyType::Char;
-    if (t == "uchar") return PlyType::UChar;
-    LOG_FATAL("invalid type: %s", t.c_str());
+std::unique_ptr<std::istream> read_binary(std::filesystem::path file_path) {
+  std::ifstream file(file_path, std::ios::binary);
+  std::unique_ptr<std::istream> file_stream;
+  if (file.fail()) {
+    throw std::runtime_error("Failed to open file: " + file_path.string());
+  }
+  // preload
+  std::vector<uint8_t> buffer(std::istreambuf_iterator<char>(file), {});
+  file_stream = std::make_unique<std::stringstream>(
+      std::string(buffer.begin(), buffer.end()));
+  return file_stream;
 }
 
-size_t ply_type_size(PlyType t) {
-    switch (t) {
-    case PlyType::Double: return sizeof(double);
-    case PlyType::Float: return sizeof(float);
-    case PlyType::Int:
-    case PlyType::UInt: return sizeof(int);
-    case PlyType::Short:
-    case PlyType::UShort: return sizeof(short);
-    case PlyType::Char:
-    case PlyType::UChar: return sizeof(char);
-    default: LOG_FATAL("should never happen");
+PlyLoader::PlyLoader() {}
+
+PointCloud PlyLoader::read_ply_file(std::filesystem::path file_path) {
+  auto ply_stream_buffer = read_binary(file_path);
+  tinyply::PlyFile file;
+  std::shared_ptr<tinyply::PlyData> vertices, normals, colors;
+  file.parse_header(*ply_stream_buffer);
+
+  //    std::cout << "\t[ply_header] Type: " << (file.is_binary_file() ?
+  //    "binary" : "ascii") << std::endl; for (const auto& c :
+  //    file.get_comments())
+  //        std::cout << "\t[ply_header] Comment: " << c << std::endl;
+  //    for (const auto& c : file.get_info())
+  //        std::cout << "\t[ply_header] Info: " << c << std::endl;
+  //
+  //    for (const auto& e : file.get_elements()) {
+  //        std::cout << "\t[ply_header] element: " << e.name << " (" << e.size
+  //        << ")" << std::endl; for (const auto& p : e.properties) {
+  //            std::cout << "\t[ply_header] \tproperty: " << p.name << "
+  //            (type=" << tinyply::PropertyTable[p.propertyType].str << ")"; if
+  //            (p.isList)
+  //                std::cout << " (list_type=" <<
+  //                tinyply::PropertyTable[p.listType].str << ")";
+  //            std::cout << std::endl;
+  //        }
+  //    }
+  // The header information can be used to programmatically extract properties
+  // on elements known to exist in the header prior to reading the data. For
+  // brevity, properties like vertex position are hard-coded:
+  try {
+    vertices = file.request_properties_from_element("vertex", {"x", "y", "z"});
+  } catch (const std::exception& e) {
+    std::cerr << "tinyply exception: " << e.what() << std::endl;
+  }
+
+  try {
+    normals =
+        file.request_properties_from_element("vertex", {"nx", "ny", "nz"});
+  } catch (const std::exception& e) {
+    std::cerr << "tinyply exception: " << e.what() << std::endl;
+  }
+
+  try {
+    colors = file.request_properties_from_element("vertex",
+                                                  {"red", "green", "blue"});
+  } catch (const std::exception& e) {
+    std::cerr << "tinyply exception: " << e.what() << std::endl;
+  }
+
+  file.read(*ply_stream_buffer);
+
+  PointCloud point_cloud;
+  if (vertices) {
+    std::cout << "\tRead " << vertices->count << " total vertices "
+              << std::endl;
+    try {
+      point_cloud._points.resize(vertices->count);
+      std::memcpy(point_cloud._points.data(), vertices->buffer.get(),
+                  vertices->buffer.size_bytes());
+    } catch (const std::exception& e) {
+      std::cerr << "tinyply exception: " << e.what() << std::endl;
     }
-}
+  } else {
+    std::cerr << "Error: vertices not found" << std::endl;
+    exit(0);
+  }
 
-PlyHeader::PlyHeader(const llfio::mapped_file_handle& file) {
-    // Find header
-    char* const file_begin = reinterpret_cast<char*>(file.address());
-    header_end_idx = [&]() {
-        constexpr std::string_view END_HEADER_STR = "end_header\n";
-        const auto length = file.maximum_extent().value();
-        for (char* p = file_begin;
-             (p = (char*)std::memchr(p, END_HEADER_STR.at(0), file_begin + length - p));
-             p++) {
-            if (END_HEADER_STR.compare(0, END_HEADER_STR.size(), p, END_HEADER_STR.size()) == 0)
-                return p - file_begin + END_HEADER_STR.size();
-        }
-        LOG_FATAL("could not parse PLY file");
-    }();
-
-    // Extract header
-    const std::string ply_header(file_begin, file_begin+header_end_idx);
-
-    if (ply_header.rfind("ply\nformat binary_little_endian 1.0", 0) != 0)
-        LOG_FATAL("unsupported PLY format");
-
-    // Find num vertices
-    const std::regex VERTEX_REGEX("element vertex (\\d+)\n");
-    auto vtx_matches = std::sregex_iterator(ply_header.begin(), ply_header.end(),
-                                            VERTEX_REGEX);
-    if (vtx_matches == std::sregex_iterator())
-        LOG_FATAL("could not parse number of vertices");
-    num_vertices = std::stoi((*vtx_matches)[1].str());
-
-    // Find properties
-    const std::regex PROPERTY_REGEX("property (\\w+) (\\w+)\n");
-    const auto prop_match_begin =
-        std::sregex_iterator(ply_header.begin(), ply_header.end(), PROPERTY_REGEX);
-    props.clear();
-    for (auto prop_match = prop_match_begin;
-         prop_match != std::sregex_iterator();
-         ++prop_match) {
-        // const size_t idx = std::distance(prop_match_begin, prop_match);
-        const std::string type = (*prop_match)[1].str();
-        const std::string name = (*prop_match)[2].str();
-        // LOG_INFO("prop %lu: <%s> %s", idx, type.c_str(), name.c_str());
-        props.emplace_back(type, name);
+  if (normals) {
+    std::cout << "\tRead " << normals->count << " total vertex normals "
+              << std::endl;
+    try {
+      point_cloud._normals.resize(normals->count);
+      std::memcpy(point_cloud._normals.data(), normals->buffer.get(),
+                  normals->buffer.size_bytes());
+    } catch (const std::exception& e) {
+      std::cerr << "tinyply exception: " << e.what() << std::endl;
     }
+  }
 
-    // Find offsets
-    row_length = 0;
-    offsets.clear();
-    for (const PlyProperty& prop : props) {
-        offsets.push_back(row_length);
-        row_length += ply_type_size(prop.type);
+  if (colors) {
+    std::cout << "\tRead " << colors->count << " total vertex colors "
+              << std::endl;
+    try {
+      point_cloud._colors.resize(colors->count);
+      std::memcpy(point_cloud._colors.data(), colors->buffer.get(),
+                  colors->buffer.size_bytes());
+    } catch (const std::exception& e) {
+      std::cerr << "tinyply exception: " << e.what() << std::endl;
     }
-}
+  } else {
+    std::cerr << "Error: colors not found" << std::endl;
+    exit(0);
+  }
 
+  return point_cloud;
 }

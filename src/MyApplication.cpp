@@ -1,7 +1,7 @@
 /**
  * MyApplication.cpp
  * Contributors:
- *      * jaccen  Email£ºjaccen2007@163.com
+ *      * jaccen  Email:jaccen2007@163.com
  * Licence:
  *      * MIT
  */
@@ -16,6 +16,9 @@
 
 #include "asset.hpp"
 #include "glError.hpp"
+#include <fstream>
+
+
 
 struct VertexType {
   glm::vec3 position;
@@ -46,8 +49,8 @@ VertexType getHeightMap(const glm::vec2 position) {
 
 MyApplication::MyApplication()
     : Application(),
-      vertexShader(SHADER_DIR "/shader.vert", GL_VERTEX_SHADER),
-      fragmentShader(SHADER_DIR "/shader.frag", GL_FRAGMENT_SHADER),
+      vertexShader(SHADER_DIR "/shader.vs", GL_VERTEX_SHADER),
+      fragmentShader(SHADER_DIR "/shader.fs", GL_FRAGMENT_SHADER),
       shaderProgram({vertexShader, fragmentShader}) {
   glCheckError(__FILE__, __LINE__);
 
@@ -112,6 +115,30 @@ MyApplication::MyApplication()
 
   // vao end
   glBindVertexArray(0);
+}
+std::unique_ptr<std::istream> read_binary(std::filesystem::path file_path) {
+  std::ifstream file(file_path, std::ios::binary);
+  std::unique_ptr<std::istream> file_stream;
+  if (file.fail()) {
+    throw std::runtime_error("Failed to open file: " + file_path.string());
+  }
+  // preload
+  std::vector<uint8_t> buffer(std::istreambuf_iterator<char>(file), {});
+  file_stream = std::make_unique<std::stringstream>(
+      std::string(buffer.begin(), buffer.end()));
+  return file_stream;
+}
+
+// Returns the file size of a given ifstream in MB
+float file_in_mb(std::istream* file_stream) {
+  file_stream->seekg(0, std::ios::end);
+  const float size_mb = file_stream->tellg() * 1e-6f;
+  file_stream->seekg(0, std::ios::beg);
+  return size_mb;
+}
+bool MyApplication::loadPly(const std::string& filename) {
+  auto ply_stream_buffer = read_binary(file_path);
+  return false;
 }
 
 void MyApplication::loop() {

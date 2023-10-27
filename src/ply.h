@@ -2,96 +2,59 @@
 
 #include "logging.h"
 
+#include <algorithm>
+#include <exception>
+#include <fstream>
+#include <iostream>
+#include <memory>
+//#include <tinyply.h>
+#include <unordered_map>
 #include <vector>
-#include <string>
-#include <llfio.hpp>
+#include "../external/tinyply/source/tinyply.h"
+struct Point {
+  float x;
+  float y;
+  float z;
+};
 
-// Helper for reading memory-mapped PLY files with a single element.
+struct Normal {
+  float x;
+  float y;
+  float z;
+};
 
-namespace viewer::ply {
-    namespace llfio = LLFIO_V2_NAMESPACE;
-
-    enum class PlyType {
-        Double,
-        Float,
-        Int,
-        UInt,
-        Short,
-        UShort,
-        Char,
-        UChar,
-    };
-
-    PlyType ply_type_from_string(const std::string& t);
-
-    size_t ply_type_size(PlyType t);
-
-    struct PlyProperty {
-        PlyProperty(const std::string& type_,
-                    const std::string& name_)
-            : type(ply_type_from_string(type_))
-            , name(name_) {}
-
-        PlyType type;
-        std::string name;
-    };
-
-    struct PlyHeader {
-        PlyHeader(const llfio::mapped_file_handle& file);
-        size_t header_end_idx;
-        size_t num_vertices;
-        std::vector<PlyProperty> props;
-        size_t row_length;
-        std::vector<size_t> offsets;
-    };
-
-    template <typename T>
-    class PlyAccessor {
-    public:
-        PlyAccessor(char* buf, size_t row_length, size_t offset)
-            : buf_(buf), row_length_(row_length), offset_(offset) {}
-
-        PlyAccessor(char* buf, const PlyHeader& h, size_t prop_idx)
-            : PlyAccessor(buf, h.row_length, h.offsets.at(prop_idx)) {}
-
-        T operator()(size_t i) const {
-            return *reinterpret_cast<T*>(buf_ + offset_ + i * row_length_);
-        }
-
-    private:
-        char* buf_;
-        size_t row_length_;
-        size_t offset_;
-    };
-
-    class PlyFile {
-    public:
-        PlyFile(const std::string& filename)
-            : file_(llfio::mapped_file({}, filename).value())
-            , header_(file_)
-            , ply_body_(reinterpret_cast<char*>(file_.address()) + header_.header_end_idx)
-            {}
-
-        template <typename T>
-        PlyAccessor<T> accessor(const std::string& prop_name) {
-            const auto it = std::find_if(header_.props.begin(), header_.props.end(),
-                                         [&](const PlyProperty& prop) {
-                                             return prop_name == prop.name;
-                                         });
-            if (it == header_.props.end())
-                LOG_FATAL("property %s does not exist", prop_name.c_str());
-            const size_t idx = std::distance(header_.props.begin(), it);
-            if (sizeof(T) != ply_type_size(header_.props.at(idx).type))
-                LOG_FATAL("invalid accessor type for property %s",
-                          prop_name.c_str());
-            return PlyAccessor<T>(ply_body_, header_, idx);
-        }
-
-        size_t num_vertices() const { return header_.num_vertices; }
-
-    private:
-        llfio::mapped_file_handle file_;
-        PlyHeader header_;
-        char* ply_body_;
-    };
+struct Color {
+  unsigned char r;
+  unsigned char g;
+  unsigned char b;
+};
+template <typename T>
+T read_binary_value(std::istream& file) {
+  T value;
+  file.read(reinterpret_cast<char*>(&value), sizeof(T));
+  return value;
 }
+
+// TODO: Do something with the images vector
+// adapted from
+// https://github.com/colmap/colmap/blob/dev/src/colmap/base/reconstruction.cc
+struct ImagePoint {  // we dont need this later
+  double _x;
+  double _y;
+  uint64_t _point_id;
+};
+struct PointCloud {
+  std::vector<Point> _points;
+  std::vector<Normal> _normals;
+  std::vector<Color> _colors;
+};
+class PlyLoader {
+ public:
+  PlyLoader();
+  ~PlyLoader();
+
+  PointCloud read_ply_file(std::filesystem::path file_path);
+  std::vector<Image> read_images_binary(std::filesystem::path file_path); 
+ private:
+};
+

@@ -1,7 +1,7 @@
 /**
  * Application.hpp
  * Contributors:
- *      * jaccen  Email£ºjaccen2007@163.com
+ *      * jaccen  Email:jaccen2007@163.com
  * Licence:
  *      * MIT
  */

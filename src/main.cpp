@@ -1,7 +1,7 @@
 /**
  * Main.cpp skeleton
  * Contributors:
- *      * Arthur Sonzogni
+ *      * jaccen  Email:jaccen2007@163.com
  * Licence:
  *      * MIT
  */

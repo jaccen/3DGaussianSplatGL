@@ -10,12 +10,11 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
-
+#include <source_location>
+#include <chrono>
+using namespace std;
 // Tracing utility producing json files in the Chrome tracing format.
 // Tracing format spec:
-// https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview
-
-namespace tracing {
 
 struct TraceEntry {
     TraceEntry(const std::string& name_,
@@ -48,9 +47,12 @@ public:
     }
 
     void begin(const std::string& filepath = "results.json") {
-        if (session_.has_value()) LOG_FATAL("tracing already begun");
+      if (session_.has_value())
+      {
+        return;
+      }
 
-        LOG_INFO("begin tracing to %s", filepath.c_str());
+        printf("begin tracing to %s", filepath.c_str());
         out_.open(filepath);
         write_header();
         session_.emplace(filepath);
@@ -67,7 +69,7 @@ public:
         write_footer();
         out_.close();
 
-        LOG_INFO(
+        printf(
             "wrote %lu profile entries to %s", count_, session_->filepath.c_str());
 
         session_.reset();
@@ -118,8 +120,8 @@ private:
     std::optional<Session> session_;
     std::vector<TraceEntry> trace_;
     std::ofstream out_;
-    size_t count_;
-    std::unordered_map<std::thread::id, size_t> thread_ids_;
+    std::size_t count_;
+    std::unordered_map<std::thread::id, std::size_t> thread_ids_;
     std::mutex mutex_;
 };
 
@@ -176,7 +178,7 @@ public:
         stopped_ = true;
 
         if (print_on_stop_)
-            LOG_INFO("%s took %.2f ms",
+            printf("%s took %.2f ms",
                      name_.c_str(),
                      1e-3 * static_cast<double>(end_micros - start_micros));
     }
@@ -187,5 +189,3 @@ private:
     const std::chrono::time_point<std::chrono::high_resolution_clock> start_;
     bool print_on_stop_;
 };
-
-}  // namespace tracing

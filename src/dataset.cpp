@@ -5,10 +5,7 @@
 
 #include <cmath>
 
-namespace viewer::dataset {
-
 namespace {
-
 void sort_fast(const SplatBuffer& buf, const Eigen::Matrix4f& P, SortResult* out) {
     // From https://github.com/antimatter15/splat
     const size_t N = buf.size();
@@ -74,7 +71,7 @@ void sort_std(const SplatBuffer& buf, const Eigen::Matrix4f& P, SortResult* out)
 
 Dataset from_ply(const std::string& filename) {
     tracing::RecorderGuard tracing_guard("load dataset");
-    ply::PlyFile ply(filename);
+    PlyFile ply(filename);
 
     // Create accessors
     const auto x = ply.accessor<float>("x");
@@ -93,7 +90,7 @@ Dataset from_ply(const std::string& filename) {
     const auto f_dc_0 = ply.accessor<float>("f_dc_0");
     const auto f_dc_1 = ply.accessor<float>("f_dc_1");
     const auto f_dc_2 = ply.accessor<float>("f_dc_2");
-    std::vector<ply::PlyAccessor<float>> sh;
+    std::vector<PlyAccessor<float>> sh;
     for (size_t i = 0; i < 45; ++i)
         sh.push_back(ply.accessor<float>("f_rest_" + std::to_string(i)));
 
@@ -148,7 +145,7 @@ Dataset from_ply(const std::string& filename) {
     return Dataset(std::move(buffer));
 }
 
-void Dataset::sort(const Eigen::Matrix4f& P, SortResult* out, bool fast_sort) const {
+void sort(const Eigen::Matrix4f& P, SortResult* out, bool fast_sort) const {
     tracing::RecorderGuard tracing_guard("sort");
 
     const size_t N = buffer_.size();
@@ -160,4 +157,3 @@ void Dataset::sort(const Eigen::Matrix4f& P, SortResult* out, bool fast_sort) co
         sort_std(buffer_, P, out);
 }
 
-}

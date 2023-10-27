@@ -1,7 +1,7 @@
 /**
- * MyApplication.hpp skeleton
+ * MyApplication.hpp 
  * Contributors:
- *      * Arthur Sonzogni
+ *      * jaccen
  * Licence:
  *      * MIT
  */
@@ -11,11 +11,15 @@
 
 #include "Application.hpp"
 #include "Shader.hpp"
-
+struct PointCloud {
+  std::vector<glm::vec3> _points;
+  std::vector<glm::vec3> _normals;
+  std::vector<glm::vec3> _colors;
+};
 class MyApplication : public Application {
  public:
   MyApplication();
-
+  bool loadPly(const std::string& filename);
  protected:
   virtual void loop();
 
@@ -33,6 +37,8 @@ class MyApplication : public Application {
 
   // VBO/VAO/ibo
   GLuint vao, vbo, ibo;
+
+  PointCloud _point_cloud;
 };
 
 #endif  // OPENGL_CMAKE_SKELETON_MYAPPLICATION
