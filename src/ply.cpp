@@ -16,7 +16,8 @@ std::unique_ptr<std::istream> read_binary(std::filesystem::path file_path) {
   return file_stream;
 }
 
-PlyLoader::PlyLoader() {}
+PlyLoader::PlyLoader() {
+}
 
 PointCloud PlyLoader::read_ply_file(std::filesystem::path file_path) {
   auto ply_stream_buffer = read_binary(file_path);
@@ -111,4 +112,58 @@ PointCloud PlyLoader::read_ply_file(std::filesystem::path file_path) {
   }
 
   return point_cloud;
+}
+
+std::vector<Image> PlyLoader::read_images_binary(
+    std::filesystem::path file_path) {
+  auto image_stream_buffer = read_binary(file_path);
+  const auto image_count = read_binary_value<uint64_t>(*image_stream_buffer);
+
+  std::vector<Image> images;
+  images.reserve(image_count);
+
+  for (size_t i = 0; i < image_count; ++i) {
+    const auto image_ID = read_binary_value<uint32_t>(*image_stream_buffer);
+    auto& img = images.emplace_back(image_ID);
+    img._qvec.x() =
+        static_cast<float>(read_binary_value<double>(*image_stream_buffer));
+    img._qvec.y() =
+        static_cast<float>(read_binary_value<double>(*image_stream_buffer));
+    img._qvec.z() =
+        static_cast<float>(read_binary_value<double>(*image_stream_buffer));
+    img._qvec.w() =
+        static_cast<float>(read_binary_value<double>(*image_stream_buffer));
+    img._qvec.normalize();
+
+    img._tvec.x() =
+        static_cast<float>(read_binary_value<double>(*image_stream_buffer));
+    img._tvec.y() =
+        static_cast<float>(read_binary_value<double>(*image_stream_buffer));
+    img._tvec.z() =
+        static_cast<float>(read_binary_value<double>(*image_stream_buffer));
+
+    img._camera_id = read_binary_value<uint32_t>(*image_stream_buffer);
+
+    char character;
+    do {
+      image_stream_buffer->read(&character, 1);
+      if (character != '\0') {
+        img._name += character;
+      }
+    } while (character != '\0');
+
+    const auto number_points =
+        read_binary_value<uint64_t>(*image_stream_buffer);
+
+    // Read all the point data at once
+    std::vector<ImagePoint> points(number_points);  // we throw this away
+    image_stream_buffer->read(reinterpret_cast<char*>(points.data()),
+                              number_points * sizeof(ImagePoint));
+  }
+
+  return images;
+}
+
+PointCloud PlyLoader::read_point3D_binary(std::filesystem::path file_path) {
+  return PointCloud();
 }
