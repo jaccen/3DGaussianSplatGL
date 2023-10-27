@@ -1,3 +1,4 @@
+worning：还在调试中，请稍等。。。。。。。
 # 3DGaussianSplatGL
 使用C++跟OpenGL实现的3D Gaussian splatting
 
