@@ -1,60 +1,62 @@
-# Projects Settings
-cmake_minimum_required (VERSION 3.1)
-project (3DGaussianSplatGL)
-set(CMAKE_CXX_STANDARD 20)
+cmake_minimum_required(VERSION 3.2)
+
+project(3DGaussianSplatGL LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS ON)
-# The main executable
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_compile_options(-DGLM_FORCE_CXX11 -DGLM_FORCE_SWIZZLE )
+
+# The compiled VERA 
+add_subdirectory(deps)
+
+file(GLOB ROOT_SOURCE 
+    "${PROJECT_SOURCE_DIR}/src/*.cpp"
+)
+
 add_executable(3DGaussianSplatGL
-  src/Application.cpp
-  src/Application.cpp
-  src/MyApplication.cpp
-  src/MyApplication.cpp
-  src/glError.hpp
-  src/glError.cpp
-  src/main.cpp
-  src/Shader.hpp
-  src/Shader.cpp
-  src/dataset.cpp
-  src/gui.cpp
-  src/logging.cpp
-  src/ply.cpp
-  src/Texture.cpp
+    ${ROOT_SOURCE}
 )
 
-set_property(TARGET 3DGaussianSplatGL PROPERTY CXX_STANDARD 20)
-target_compile_options(3DGaussianSplatGL PRIVATE -Wall)
-
-add_definitions(-DGLEW_STATIC)
-add_subdirectory(external/glfw EXCLUDE_FROM_ALL)
-add_subdirectory(external/glew EXCLUDE_FROM_ALL)
-add_subdirectory(external/glm EXCLUDE_FROM_ALL)
-#add_subdirectory(external/imgui EXCLUDE_FROM_ALL)
-add_subdirectory(external/cxxopts EXCLUDE_FROM_ALL)
-#add_subdirectory(external/llfio EXCLUDE_FROM_ALL)
-add_subdirectory(external/eigen EXCLUDE_FROM_ALL)
-add_subdirectory(external/tinyply EXCLUDE_FROM_ALL)
-
-
-target_link_libraries(3DGaussianSplatGL
-  PRIVATE glfw
-  PRIVATE libglew_static
-  PRIVATE glm
-  #PRIVATE imgui
-  PRIVATE cxxopts
-  #PRIVATE llfio
-  PRIVATE eigen
-  PRIVATE tinyply
-
+set_target_properties(3DGaussianSplatGL PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
 )
 
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/asset.hpp.in
-  ${CMAKE_CURRENT_BINARY_DIR}/src/asset.hpp
-)
-target_include_directories(3DGaussianSplatGL
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
-  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/src
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external
+# copy all files on assets on the build folder
+file(COPY   assets/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
 
-)
+if (EMSCRIPTEN)
+
+    # # create a hello_world.html 
+    # set_target_properties(hello_world PROPERTIES SUFFIX ".html")
+
+    # copy the index.html 
+    file(COPY   assets/wasm/index.html DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
+    file(COPY   assets/wasm/fullscreen.html DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
+    file(COPY   assets/wasm/thumbnail.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
+
+    # set(LFLAGS "${LFLAGS} -pthread")
+    set(LFLAGS "${LFLAGS} -s USE_PTHREADS=0")
+    set(LFLAGS "${LFLAGS} -s WASM=1")
+    set(LFLAGS "${LFLAGS} -s USE_GLFW=3")
+    # set(LFLAGS "${LFLAGS} -s FULL_ES2=1")
+    # set(LFLAGS "${LFLAGS} -s FULL_ES3=1")
+    # set(LFLAGS "${LFLAGS} -s MIN_WEBGL_VERSION=2")
+    set(LFLAGS "${LFLAGS} -s MAX_WEBGL_VERSION=2")
+    # set(LFLAGS "${LFLAGS} -s WEBGL2_BACKWARDS_COMPATIBILITY_EMULATION=1")
+    set(LFLAGS "${LFLAGS} -s ALLOW_MEMORY_GROWTH=1")
+    # set(LFLAGS "${LFLAGS} -s NO_DYNAMIC_EXECUTION=1")
+    set(LFLAGS "${LFLAGS} -s ASYNCIFY")
+
+    set(LFLAGS "${LFLAGS} --preload-file earth-water.png")
+    
+    set_target_properties(3DGaussianSplatGL PROPERTIES LINK_FLAGS "${LFLAGS}")
+    target_link_libraries(3DGaussianSplatGL PRIVATE vera glfw webxr)
+    
+else()
+    target_link_libraries(3DGaussianSplatGL PRIVATE vera  )
+
+endif()
+
+

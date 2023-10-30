@@ -1,15 +1,16 @@
-/**
- * Main.cpp skeleton
- * Contributors:
- *      * jaccen  Email:jaccen2007@163.com
- * Licence:
- *      * MIT
- */
-
 #include "MyApplication.hpp"
+#include "vera/ops/string.h"
+#include "vera/ops/meshes.h"
 
-int main(int argc, const char* argv[]) {
-  MyApplication app;
-  app.run();
-  return 0;
+using namespace std;
+using namespace vera;
+using namespace glm;
+
+int main(int argc, char **argv) {
+    WindowProperties prop;
+    MyApplication app;
+    // prop.style = LENTICULAR;
+    // setQuiltProperties(2);
+    app.run(prop);
+    return 1;
 }
