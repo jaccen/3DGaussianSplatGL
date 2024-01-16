@@ -11,3 +11,9 @@ https://github.com/cvlab-epfl/gaussian-splatting-web
 本文主要使用C++实现，通过webassembly生成js，可以使用web浏览器View
 
 随后会把详细文档补充
+编译：
+windows
+ 使用CMake
+
+ web：
+    
