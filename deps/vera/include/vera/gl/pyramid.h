@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vbo.h"
 #include "fbo.h"
 #include "shader.h"
 
@@ -30,7 +31,7 @@ public:
     void            process(const Fbo *_fbo);
     std::function<void(Fbo*,const Fbo*,const Fbo*, int)> pass;
 
-    float           scale;
+    bool            fixed;
 private:
     Fbo             m_downs[PYRAMID_MAX_LAYERS];
     Fbo             m_ups[PYRAMID_MAX_LAYERS];

@@ -4,20 +4,10 @@
 #include "vera/ops/fs.h"
 #include "vera/ops/pixel.h"
 
-#include "vera/window.h"
-
 namespace vera {
 
 // TEXTURE
-Texture::Texture() : m_path(""), m_width(0), m_height(0), m_id(0), m_vFlip(false) {
-}
-
-Texture::Texture(const Image& _img, TextureFilter _filter, TextureWrap _wrap) : m_path(""), m_width(0), m_height(0), m_id(0), m_vFlip(false) {
-    load(_img);
-}
-
-Texture::Texture(const Image* _img, TextureFilter _filter, TextureWrap _wrap) : m_path(""), m_width(0), m_height(0), m_id(0), m_vFlip(false) {
-    load(_img);
+Texture::Texture():m_path(""), m_width(0), m_height(0), m_id(0), m_vFlip(false) {
 }
 
 Texture::~Texture() {
@@ -70,11 +60,9 @@ bool Texture::load(const std::string& _path, bool _vFlip, TextureFilter _filter,
     }
 
     // HDR (radiance rgbE format)
-    else if (   ext == "hdr" || ext == "HDR" ||
-                ext == "exr" || ext == "EXR" ) {
-        int channels = 3;
-        float* pixels = loadPixelsFloat(_path, &m_width, &m_height, &channels, _vFlip);
-        loaded = load(m_width, m_height, channels, 32, pixels, _filter, _wrap);
+    else if (ext == "hdr" || ext == "HDR") {
+        float* pixels = loadPixelsHDR(_path, &m_width, &m_height, _vFlip);
+        loaded = load(m_width, m_height, 3, 32, pixels, _filter, _wrap);
         freePixels(pixels);
     }
 
@@ -92,17 +80,8 @@ bool Texture::load(const Image* _img, TextureFilter _filter, TextureWrap _wrap) 
     return load(_img->m_width, _img->m_height, _img->m_channels, 32, &_img->m_data[0], _filter, _wrap);
 }
 
-bool Texture::load(int _width, int _height, int _id ) {
-    m_width     = _width;
-    m_height    = _height;
-    m_id        = _id; 
-
-    m_filter    = LINEAR;
-    m_wrap      = REPEAT;
-    return true;
-}
-
 bool Texture::load(int _width, int _height, int _channels, int _bits, const void* _data, TextureFilter _filter, TextureWrap _wrap) {
+
     GLenum format = GL_RGBA;
     if (_channels == 4)         format = GL_RGBA;
     else if (_channels == 3)    format = GL_RGB;
@@ -118,30 +97,17 @@ bool Texture::load(int _width, int _height, int _channels, int _bits, const void
     else if (_bits == 8)    type = GL_UNSIGNED_BYTE;
     else std::cout << "Unrecognize GLenum type for " << _bits << " bits" << std::endl;
 
-    GLenum internalFormat = format;
-    if (_bits == 32 && _channels == 4) {
-        #if defined(PLATFORM_RPI) || defined(DRIVER_GBM)
-        #else
-        // if ( haveExtension("OES_texture_float") )
-            internalFormat = GL_RGBA32F;
-        // else if ( haveExtension("OES_texture_half_float") )
-            // internalFormat = GL_RGBA16F;
-        // else
-            // internalFormat = GL_RGBA16;
-        #endif
-    }
-
     if (_width  == m_width  && _height  == m_height &&
-        _filter == m_filter && _wrap    == m_wrap   &&
-        format  == m_format && type     == m_type   )
-        return update(0, 0, _width, _height, _data);
+        _filter == m_filter && _wrap    == m_wrap &&
+        format  == m_format && type     == m_type )
+        return update(0,0,_width,_height, _data);
 
-    m_width     = _width;
-    m_height    = _height;
-    m_filter    = _filter;
-    m_format    = format;
-    m_type      = type;
-    m_wrap      = _wrap;
+    m_width = _width;
+    m_height = _height;
+    m_format = format;
+    m_type = type;
+    m_filter = _filter;
+    m_wrap = _wrap;
 
     // Generate an OpenGL texture ID for this texturez
     if (m_id == 0)
@@ -186,7 +152,7 @@ bool Texture::load(int _width, int _height, int _channels, int _bits, const void
     else
         glTexImage2D(GL_TEXTURE_2D, 0, format, m_width, m_height, 0, format, type, _data);
 #else
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_width, m_height, 0, format, type, _data);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, m_width, m_height, 0, format, type, _data);
 #endif
     return true;
 }

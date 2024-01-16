@@ -8,8 +8,7 @@
 namespace vera {
 
 Fbo::Fbo():
-    scale(1.0),
-    enabled(true),
+    fixed(false),
     m_id(0), 
     m_fbo_id(0), m_old_fbo_id(0), 
     m_depth_id(0), m_depth_buffer(0),  
@@ -28,6 +27,8 @@ Fbo::~Fbo() {
 }
 
 void Fbo::allocate(const uint32_t _width, const uint32_t _height, FboType _type, TextureFilter _filter, TextureWrap _wrap, bool _autoclear) {
+    m_type = _type;
+
     bool color_texture = true;
     bool depth_texture = false;
     
@@ -35,14 +36,15 @@ void Fbo::allocate(const uint32_t _width, const uint32_t _height, FboType _type,
     
     switch(_type) {
         case COLOR_TEXTURE:
+            m_depth = false;
+            color_texture = true;
+            depth_texture = false;
+        break;
         case COLOR_FLOAT_TEXTURE:
             m_depth = false;
             color_texture = true;
             depth_texture = false;
         break;
-        case GBUFFER_TEXTURE:
-            _filter = NEAREST;
-            _wrap = CLAMP;
         case COLOR_TEXTURE_DEPTH_BUFFER:
             m_depth = true;
             color_texture = true;
@@ -69,11 +71,7 @@ void Fbo::allocate(const uint32_t _width, const uint32_t _height, FboType _type,
         if (m_depth) 
             glGenRenderbuffers(1, &m_depth_buffer);
     }
-    // If it's already declare skip
-    else if (m_width == _width && m_height == _height && m_type == _type)
-        return;
 
-    m_type = _type;
     m_width = _width;
     m_height = _height;
 
@@ -99,9 +97,13 @@ void Fbo::allocate(const uint32_t _width, const uint32_t _height, FboType _type,
         GLenum type = GL_UNSIGNED_BYTE;
 
 #if defined(PLATFORM_RPI) || defined(DRIVER_GBM)
+
+#elif defined(__APPLE__)
+        format = GL_RGBA16;
+        type = GL_UNSIGNED_BYTE;
+
 #else
-        if (_type == COLOR_FLOAT_TEXTURE || 
-            _type == GBUFFER_TEXTURE) {
+        if (_type == COLOR_FLOAT_TEXTURE) {
             if ( haveExtension("OES_texture_float") ) {
                 format = GL_RGBA32F;
                 type = GL_FLOAT;
@@ -116,7 +118,6 @@ void Fbo::allocate(const uint32_t _width, const uint32_t _height, FboType _type,
             }
         }
 #endif
-
         glTexImage2D(GL_TEXTURE_2D, 0, format, m_width, m_height, 0, GL_RGBA, type, NULL);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, getWrap(_wrap));

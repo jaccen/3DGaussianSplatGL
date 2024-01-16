@@ -16,11 +16,10 @@ namespace vera {
 Shader::Shader():
     m_fragmentSource(""),
     m_vertexSource(""),
-    m_previousFragmentSource(""),
-    m_previousVertexSource(""),
-    m_program(0), m_fragmentShader(0), m_vertexShader(0),
-    m_error_screen(SHOW_MAGENTA_SHADER),
-    m_needsReloading(true) {
+    m_program(0), m_fragmentShader(0), m_vertexShader(0) {
+
+    // Adding default defines
+    addDefine("GLSLVIEWER", 200);
 
     // Define PLATFORM
     #if defined(__APPLE__)
@@ -28,7 +27,7 @@ Shader::Shader():
 
     #elif defined(_WIN32)
     addDefine("PLATFORM_WIN");
-
+    
     #elif defined(PLATFORM_RPI)
     addDefine("PLATFORM_RPI");
 
@@ -37,92 +36,79 @@ Shader::Shader():
 
     if (getXR() != NONE_XR_MODE)
         addDefine("PLATFORM_WEBXR", toString((int)getXR()));
-
+    
     #else
     addDefine("PLATFORM_LINUX");
-
+    
     #endif
-
-    m_defineChange = true;
 }
 
 Shader::~Shader() {
     // Avoid crash when no command line arguments supplied
-    if (isLoaded())
+    if (m_program != 0)
         glDeleteProgram(m_program);
 }
 
 void Shader::operator = (const Shader &_parent ) {
     m_fragmentSource = _parent.m_fragmentSource;
     m_vertexSource = _parent.m_vertexSource;
+
     m_defineChange = true;
-    m_needsReloading = true;
 }
 
 void Shader::setSource(const std::string& _fragmentSrc, const std::string& _vertexSrc) {
     m_fragmentSource = _fragmentSrc;
     m_vertexSource = _vertexSrc;
-    m_needsReloading = true;
 }
 
 bool Shader::load(const std::string& _fragmentSrc, const std::string& _vertexSrc, ShaderErrorResolve _onError, bool _verbose) {
+    std::chrono::time_point<std::chrono::steady_clock> start_time, end_time;
+    start_time = std::chrono::steady_clock::now();
+    m_defineChange = false;
+
     setVersionFromCode(_fragmentSrc);
-    if (m_fragmentSource == "" || m_vertexSource == "") {
+    if (m_fragmentSource == "" || m_vertexSource =="") {
         m_fragmentSource = getDefaultSrc(FRAG_ERROR);
         m_vertexSource = getDefaultSrc(VERT_ERROR);
     }
-
-
-    // VERTEX
     m_vertexShader = compileShader(_vertexSrc, GL_VERTEX_SHADER, _verbose);
+
     if (!m_vertexShader) {
         if (_onError == SHOW_MAGENTA_SHADER) {
-            if (_verbose)
-                printf("Error compiling vertex shader, loading magenta shader\n");
-            load(getDefaultSrc(FRAG_ERROR), getDefaultSrc(VERT_ERROR), DONT_KEEP_SHADER, _verbose);
+            load(getDefaultSrc(FRAG_ERROR), getDefaultSrc(VERT_ERROR), DONT_KEEP_SHADER, false);
             return false;
         }
         else if (_onError == REVERT_TO_PREVIOUS_SHADER) {
-            if (_verbose)
-                printf("Error compiling vertex shader, reverting to default shader\n");
-            load(m_previousFragmentSource, m_previousVertexSource, SHOW_MAGENTA_SHADER, _verbose);
+            reload(SHOW_MAGENTA_SHADER, _verbose);
             return false;
         }
     }
 
-    // FRAGMENT
     m_fragmentShader = compileShader(_fragmentSrc, GL_FRAGMENT_SHADER, _verbose);
+
     if (!m_fragmentShader) {
-        if (_onError == SHOW_MAGENTA_SHADER) {
-            if (_verbose)
-                printf("Error compiling fragment shader, loading magenta shader\n");
-            load(getDefaultSrc(FRAG_ERROR), getDefaultSrc(VERT_ERROR), DONT_KEEP_SHADER, _verbose);
-            return false;
-        }
-        else if (_onError == REVERT_TO_PREVIOUS_SHADER) {
-            if (_verbose)
-                printf("Error compiling fragment shader, reverting to default shader\n");
-            load(m_previousFragmentSource, m_previousVertexSource, SHOW_MAGENTA_SHADER, _verbose);
-            return false;
-        }
+        if (_onError == SHOW_MAGENTA_SHADER)
+            load(getDefaultSrc(FRAG_ERROR), getDefaultSrc(VERT_ERROR), SHOW_MAGENTA_SHADER, false);
+        else if (_onError == REVERT_TO_PREVIOUS_SHADER)
+            reload(SHOW_MAGENTA_SHADER, _verbose);
     }
 
-    // PROGRAM
     if (m_program != 0)
         glDeleteProgram(m_program);
+        
     m_program = glCreateProgram();
+
     glAttachShader(m_program, m_vertexShader);
     glAttachShader(m_program, m_fragmentShader);
     glLinkProgram(m_program);
 
-    // SUCCESS
     if (_onError != DONT_KEEP_SHADER) {
-        // we need to explicitely remember the previous shader or REVERT_TO_PREVIOUS_SHADER always falls through to SHOW_MAGENTA_SHADER.
         m_fragmentSource = _fragmentSrc;
         m_vertexSource = _vertexSrc;
-        m_previousFragmentSource = _fragmentSrc;
-        m_previousVertexSource = _vertexSrc;
     }
+
+    end_time = std::chrono::steady_clock::now();
+    std::chrono::duration<double> load_time = end_time - start_time;
 
     GLint isLinked;
     glGetProgramiv(m_program, GL_LINK_STATUS, &isLinked);
@@ -130,8 +116,6 @@ bool Shader::load(const std::string& _fragmentSrc, const std::string& _vertexSrc
     if (isLinked == GL_FALSE) {
         GLint infoLength = 0;
         glGetProgramiv(m_program, GL_INFO_LOG_LENGTH, &infoLength);
-
-        #if !defined(SWIG)
         if (infoLength > 1) {
             std::vector<GLchar> infoLog(infoLength);
             glGetProgramInfoLog(m_program, infoLength, NULL, &infoLog[0]);
@@ -142,25 +126,38 @@ bool Shader::load(const std::string& _fragmentSrc, const std::string& _vertexSrc
             std::size_t start = error.find("line ")+5;
             std::size_t end = error.find_last_of(")");
             std::string lineNum = error.substr(start,end-start);
-            if (toInt(lineNum) > 0)
-                std::cerr << (unsigned)toInt(lineNum) << ": " << getLineNumber(_fragmentSrc,(unsigned)toInt(lineNum)) << std::endl;
+            std::cerr << (unsigned)toInt(lineNum) << ": " << getLineNumber(_fragmentSrc,(unsigned)toInt(lineNum)) << std::endl;
         }
-        #endif
-
-        if (_verbose)
-            printf("Linking fail, deleting program and loading error shader\n");
         glDeleteProgram(m_program);
-        load(getDefaultSrc(FRAG_ERROR), getDefaultSrc(VERT_ERROR), DONT_KEEP_SHADER, _verbose);
+        load(getDefaultSrc(FRAG_ERROR), getDefaultSrc(VERT_ERROR), DONT_KEEP_SHADER, false);
         return false;
-    }
+    } 
     else {
         glDeleteShader(m_vertexShader);
         glDeleteShader(m_fragmentShader);
 
-        m_needsReloading = false;
-        // m_defineChange = false;
+//         if (_verbose) {
+//             std::cerr << "shader load time: " << load_time.count() << "s";
+// #ifdef GL_PROGRAM_BINARY_LENGTH
+//             GLint proglen = 0;
+//             glGetProgramiv(m_program, GL_PROGRAM_BINARY_LENGTH, &proglen);
+//             if (proglen > 0)
+//                 std::cerr << " size: " << proglen;
+// #endif
+// #ifdef GL_PROGRAM_INSTRUCTIONS_ARB
+//             GLint icount = 0;
+//             glGetProgramivARB(m_program, GL_PROGRAM_INSTRUCTIONS_ARB, &icount);
+//             if (icount > 0)
+//                 std::cerr << " #instructions: " << icount;
+// #endif
+//             std::cerr << std::endl;
+//         }
         return true;
     }
+}
+
+bool Shader::reload(ShaderErrorResolve _onError, bool _verbose) {
+    return load(m_fragmentSource, m_vertexSource, _onError, _verbose);
 }
 
 const GLint Shader::getAttribLocation(const std::string& _attribute) const {
@@ -168,12 +165,13 @@ const GLint Shader::getAttribLocation(const std::string& _attribute) const {
 }
 
 void Shader::use() {
-    if (isDirty())
-        load(m_fragmentSource, m_vertexSource, m_error_screen, false);
+    textureIndex = 0;
+
+    if (m_defineChange || !loaded() )
+        reload(SHOW_MAGENTA_SHADER, false);
 
     if (!inUse())
         glUseProgram(getProgram());
-    textureIndex = 0;
 }
 
 bool Shader::inUse() const {
@@ -182,7 +180,7 @@ bool Shader::inUse() const {
     return (getProgram() == (GLuint)currentProgram);
 }
 
-bool Shader::isLoaded() const {
+bool Shader::loaded() const {
     return m_program != 0;
 }
 
@@ -214,7 +212,7 @@ GLuint Shader::compileShader(const std::string& _src, GLenum _type, bool _verbos
         // copy the rest of the shader into srcBody
         std::ostringstream srcOss("");
         std::string dataRead;
-        while (std::getline(srcIss,dataRead)) {
+        while(std::getline(srcIss,dataRead)){
             srcOss << dataRead << '\n';
         }
         srcBody = srcOss.str();
@@ -249,14 +247,8 @@ GLuint Shader::compileShader(const std::string& _src, GLenum _type, bool _verbos
         zeroBasedLineDirective = true; // ... glsl defaults to version 1.10, which starts numbering #line directives from 0.
     }
 
-    // Only update the define stack string when it change
-    if (m_defineChange) {
-        m_defineStack = "";
-        for (DefinesMap_it it = m_defines.begin(); it != m_defines.end(); it++)
-            m_defineStack += "#define " + it->first + " " + it->second + '\n';
-        m_defineChange = false;
-    }
-    prolog += m_defineStack;
+    for (DefinesMap_it it = m_defines.begin(); it != m_defines.end(); it++)
+        prolog += "#define " + it->first + " " + it->second + '\n';
 
     //
     // determine the #line offset to be used for conciliating lines in glsl error messages and the line number in the editor
@@ -294,7 +286,7 @@ GLuint Shader::compileShader(const std::string& _src, GLenum _type, bool _verbos
 
     GLint infoLength = 0;
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLength);
-
+    
 #if defined(PLATFORM_RPI) || defined(__EMSCRIPTEN__)
     if (infoLength > 1 && !isCompiled) {
 #else
@@ -308,9 +300,9 @@ GLuint Shader::compileShader(const std::string& _src, GLenum _type, bool _verbos
 
         std::vector<std::string> chuncks = vera::split(error_msg, ' ');
         size_t line_number = 0;
-
-#if defined(__APPLE__)
-    // Error Message on Apple M1
+        
+#if defined(__APPLE__) 
+    // Error Message on Apple M1 
         // ERROR: 0:41: 'color' : syntax error: syntax error
 
         std::vector<std::string> error_loc = vera::split(chuncks[1], ':');
@@ -321,11 +313,11 @@ GLuint Shader::compileShader(const std::string& _src, GLenum _type, bool _verbos
 
 #elif defined(__EMSCRIPTEN__)
 
-#else
+#else 
     // Linux ARM
         // 0:41(2): error: syntax error, unexpected IDENTIFIER, expecting ',' or ';'
-
-    // Linux iX86
+    
+    // Linux iX86 
         // Error Message on Mesa Intel(R) Iris(R) Plus Graohics (ICL GT2)
         // 0:41(2): error: syntax error, unexpected IDENTIFIER, expecting ',' or ';'
 
@@ -345,7 +337,7 @@ GLuint Shader::compileShader(const std::string& _src, GLenum _type, bool _verbos
             line_number -= 2;
             std::vector<std::string> lines = vera::split(_src, '\n', true);
             for (size_t i = line_number; i < lines.size() && i < line_number + 3; i++)
-                std::cerr << i + 1 << " " << lines[i] << std::endl;
+                std::cerr << i + 1 << " " << lines[i] << std::endl; 
         }
 
     }

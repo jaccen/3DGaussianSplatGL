@@ -1,34 +1,19 @@
 # Main folders
+set(INCLUDE_FOLDER "${PROJECT_SOURCE_DIR}/include")
 set(SOURCE_FOLDER "${PROJECT_SOURCE_DIR}/src")
 set(DEPS_FOLDER "${PROJECT_SOURCE_DIR}/deps")
-set(INCLUDE_FOLDER "${PROJECT_SOURCE_DIR}/include")
-set(INCLUDE_DEPS_FOLDERS
-    "${PROJECT_SOURCE_DIR}/deps/glm"
-    "${PROJECT_SOURCE_DIR}/deps/stb"
-    "${PROJECT_SOURCE_DIR}/deps/glob"
-    "${PROJECT_SOURCE_DIR}/deps/skymodel"
-    "${PROJECT_SOURCE_DIR}/deps/fontstash"
-    "${PROJECT_SOURCE_DIR}/deps/miniaudio"
-    "${PROJECT_SOURCE_DIR}/deps/phonedepth"
-    "${PROJECT_SOURCE_DIR}/deps/tinygltf"
-    "${PROJECT_SOURCE_DIR}/deps/tinyobjloader"
-    "${PROJECT_SOURCE_DIR}/deps/tinyply"
-    "${PROJECT_SOURCE_DIR}/deps/miniz"
-    "${PROJECT_SOURCE_DIR}/deps/tinyexr"
-)
 
 # HEADERS files
 file(GLOB ROOT_HEADER "${INCLUDE_FOLDER}/vera/*.h")
 file(GLOB GL_HEADER "${INCLUDE_FOLDER}/vera/gl/*.h")
 file(GLOB IO_HEADER "${INCLUDE_FOLDER}/vera/io/*.h")
 file(GLOB OPS_HEADER "${INCLUDE_FOLDER}/vera/ops/*.h")
-file(GLOB SHADERS_HEADER "${INCLUDE_FOLDER}/vera/shaders/*.h")
 file(GLOB TYPES_HEADER "${INCLUDE_FOLDER}/vera/types/*.h")
-file(GLOB XR_HEADER "${INCLUDE_FOLDER}/vera/xr/*.h")
+file(GLOB DEVICES_HEADER "${INCLUDE_FOLDER}/vera/devices/*.h")
+file(GLOB SHADERS_HEADER "${INCLUDE_FOLDER}/vera/shaders/*.h")
 
 # SOURCE files
 set(VERA_SOURCES
-    ${DEPS_FOLDER}/miniz/miniz.cpp
     ${DEPS_FOLDER}/glob/glob.cpp
     ${DEPS_FOLDER}/phonedepth/extract_depthmap.cpp
     ${DEPS_FOLDER}/skymodel/ArHosekSkyModel.cpp
@@ -43,7 +28,6 @@ set(VERA_SOURCES
     ${SOURCE_FOLDER}/gl/defines.cpp 
     ${SOURCE_FOLDER}/gl/pingpong.cpp
     ${SOURCE_FOLDER}/gl/pyramid.cpp
-    ${SOURCE_FOLDER}/gl/flood.cpp
     ${SOURCE_FOLDER}/gl/texture.cpp 
     ${SOURCE_FOLDER}/gl/textureBump.cpp
     ${SOURCE_FOLDER}/gl/textureCube.cpp 
@@ -68,7 +52,6 @@ set(VERA_SOURCES
     ${SOURCE_FOLDER}/ops/pixel.cpp 
     ${SOURCE_FOLDER}/ops/string.cpp
     ${SOURCE_FOLDER}/ops/time.cpp
-    ${SOURCE_FOLDER}/types/bvh.cpp
     ${SOURCE_FOLDER}/types/camera.cpp
     ${SOURCE_FOLDER}/types/font.cpp
     ${SOURCE_FOLDER}/types/image.cpp
@@ -112,14 +95,12 @@ endif()
     
 find_package(ILCLIENT)
 if (ILCLIENT_FOUND)
-    message(STATUS "OMAL Supported")
     target_include_directories(vera PUBLIC   ${ILCLIENT_INCLUDE_DIR} )
     target_link_libraries(vera PUBLIC        ${ILCLIENT_LIBRARY} )
 endif()      
 
 find_package(OMAX)
 if (OMAX_FOUND AND ILCLIENT_FOUND)
-    message(STATUS "OMAL Supported")
     target_compile_definitions(vera PUBLIC   ${OMAX_DEFINITIONS})
     target_link_libraries(vera PUBLIC        ${OMAX_LIBRARIES})
     target_compile_definitions(vera PUBLIC   SUPPORT_OMAX)
@@ -127,7 +108,6 @@ endif()
 
 find_package(MMAL)
 if (MMAL_FOUND)
-    message(STATUS "MMAL Supported")
     target_link_libraries(vera PUBLIC        ${MMAL_LIBRARIES})
     target_compile_definitions(vera PUBLIC   SUPPORT_MMAL)
 endif()
@@ -152,21 +132,13 @@ else()
             libswresample
             libswscale
             libavutil
-        )
+            )
         if (FFPMEG_FOUND)
             message(STATUS "LIBAV Supported")
             target_link_libraries(vera PUBLIC PkgConfig::FFPMEG)
             target_compile_definitions(vera PUBLIC SUPPORT_LIBAV)
         endif()
     endif()
-endif()
-
-find_package(exiv2lib CONFIG NAMES exiv2)
-if (exiv2lib_FOUND)
-    link_libraries(exiv2lib)
-    target_compile_definitions(vera PUBLIC SUPPORT_EXIV2)
-    target_link_libraries(vera PRIVATE exiv2lib)
-    message(STATUS "EXIV2 FOUNDED")
 endif()
 
 if (NO_X11 OR FORCE_GBM)
@@ -294,86 +266,30 @@ else()
 endif()
 
 # We need this directory, and users of our library will need it too
-target_include_directories(vera PUBLIC ${INCLUDE_DEPS_FOLDERS} ${INCLUDE_FOLDER} )
+target_include_directories(vera PUBLIC 
+    "${PROJECT_SOURCE_DIR}/deps/glm"
+    "${PROJECT_SOURCE_DIR}/deps/stb"
+    "${PROJECT_SOURCE_DIR}/deps/glob"
+    "${PROJECT_SOURCE_DIR}/deps/skymodel"
+    "${PROJECT_SOURCE_DIR}/deps/fontstash"
+    "${PROJECT_SOURCE_DIR}/deps/miniaudio"
+    "${PROJECT_SOURCE_DIR}/deps/phonedepth"
+    "${PROJECT_SOURCE_DIR}/deps/tinygltf"
+    "${PROJECT_SOURCE_DIR}/deps/tinyobjloader"
+    "${PROJECT_SOURCE_DIR}/deps/tinyply"
+    ${INCLUDE_FOLDER}
+)
 
 # IDEs should put the headers in a nice place
 # source_group(   TREE ${INCLUDE_FOLDER} 
 #                 PREFIX "Header Files" FILES ${ROOT_HEADER})
-                
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
-    install(TARGETS ${PROJECT_NAME} DESTINATION lib)
-    install(FILES ${ROOT_HEADER} DESTINATION include/vera)
-    install(FILES ${GL_HEADER} DESTINATION include/vera/gl)
-    install(FILES ${IO_HEADER} DESTINATION include/vera/io)
-    install(FILES ${OPS_HEADER} DESTINATION include/vera/ops)
-    install(FILES ${SHADERS_HEADER} DESTINATION include/vera/shaders)
-    install(FILES ${TYPES_HEADER} DESTINATION include/vera/types)
-    install(FILES ${XR_HEADER} DESTINATION include/vera/xr)
+# install(TARGETS ${PROJECT_NAME} DESTINATION lib)
+# install(FILES ${ROOT_HEADER} DESTINATION include/vera)
+# install(FILES ${GL_HEADER} DESTINATION include/vera/gl)
+# install(FILES ${IO_HEADER} DESTINATION include/vera/io)
+# install(FILES ${OPS_HEADER} DESTINATION include/vera/ops)
+# install(FILES ${TYPES_HEADER} DESTINATION include/vera/types)
+# install(FILES ${DEVICES_HEADER} DESTINATION include/vera/devices)
+# install(FILES ${SHADERS_HEADER} DESTINATION include/vera/shaders)
 
-    # # PYTHON BINDINGS 
-    # #
-    # find_package(SWIG)
-    # if(SWIG_FOUND)
-    #     include(${SWIG_USE_FILE})
-    #     include(UseSWIG)
-
-    #     if(POLICY CMP0078)
-    #         cmake_policy(SET CMP0078 OLD)
-    #     endif(POLICY CMP0078)
-
-    #     if(POLICY CMP0086)
-    #         cmake_policy(SET CMP0086 OLD)
-    #     endif(POLICY CMP0086)
-
-    #     set(INCLUDE_SWIG_FILE "${PROJECT_SOURCE_DIR}/${PROJECT_NAME}.i")
-
-    #     find_package(PythonLibs REQUIRED)
-    #     include_directories(${PYTHON_INCLUDE_DIRS})
-
-    #     if(NOT PYTHON_NUMPY_INCLUDE_DIR)
-    #         execute_process(COMMAND python3 -c "import numpy; print(numpy.get_include())"
-    #                         RESULT_VARIABLE PYTHON_NUMPY_PROCESS
-    #                         OUTPUT_VARIABLE PYTHON_NUMPY_INCLUDE_DIR
-    #                         OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-    #         if(PYTHON_NUMPY_PROCESS EQUAL 0)
-    #             file(TO_CMAKE_PATH "${PYTHON_NUMPY_INCLUDE_DIR}" PYTHON_NUMPY_INCLUDE_CMAKE_PATH)
-    #             set(PYTHON_NUMPY_INCLUDE_DIR ${PYTHON_NUMPY_INCLUDE_CMAKE_PATH} CACHE PATH "Numpy include directory")
-    #         else()
-    #             message(SEND_ERROR "Could not determine the NumPy include directory, verify that NumPy was installed correctly.")
-    #         endif()
-    #     endif()
-        
-    #     include_directories(${PYTHON_NUMPY_INCLUDE_DIR} 
-    #                         ${DEPS_FOLDER}/glfw/include 
-    #                         ${INCLUDE_DEPS_FOLDERS} 
-    #                         ${INCLUDE_FOLDER})
-        
-    #     set_property(SOURCE ${INCLUDE_SWIG_FILE} PROPERTY CPLUSPLUS ON)
-
-    #     if (CMAKE_VERSION VERSION_LESS "3.8")
-    #         swig_add_module(${PROJECT_NAME} 
-    #                         python 
-    #                         ${INCLUDE_SWIG_FILE} ${VERA_SOURCES})
-    #     else()
-    #         swig_add_library(${PROJECT_NAME} 
-    #                         LANGUAGE python
-    #                         SOURCES ${INCLUDE_SWIG_FILE} ${VERA_SOURCES})
-    #     endif()
-    #     swig_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES} ${PYTHON_LIBRARIES})
-    #     # set_property(TARGET _${PROJECT_NAME} PROPERTY SWIG_COMPILE_DEFINITIONS DRIVER_GLFW GL_OPENGL PLATFORM_LINUX)
-    #     # set_property(TARGET _${PROJECT_NAME} PROPERTY SWIG_COMPILE_OPTIONS -DSWIG -DDRIVER_GLFW -DGL_OPENGL -DPLATFORM_LINUX)
-
-    #     # INSTALL PYTHON BINDINGS
-    #     # Get the python site packages directory by invoking python
-    #     execute_process(COMMAND python3 -c "import site; print(site.getsitepackages()[0])" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
-    #     message("Installing at ${SITE_PACKAGES}")
-
-    #     install(TARGETS _${PROJECT_NAME} DESTINATION ${PYTHON_SITE_PACKAGES}/${PROJECT_NAME})
-    #     install(FILES ${PROJECT_SOURCE_DIR}/__init__.py DESTINATION ${PYTHON_SITE_PACKAGES}/${PROJECT_NAME})
-    #     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.py DESTINATION ${PYTHON_SITE_PACKAGES}/${PROJECT_NAME})
-
-    # endif()
-
-endif()

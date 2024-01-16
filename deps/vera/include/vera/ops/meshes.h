@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "../types/mesh.h"
-#include "../types/image.h"
 #include "../types/boundingBox.h"
 
 namespace vera {
@@ -26,7 +25,7 @@ Mesh planeMesh(float _width, float _height, int _columns, int _rows, DrawMode _d
 Mesh boxMesh( float _width, float _height, float _depth, int _resX = 1, int _resY = 1, int _resZ = 1);
 
 Mesh cubeMesh(float _size = 1.0f);
-Mesh cubeMesh(float _size, int _resolution );
+Mesh cubeMesh( float _size, int _resolution );
 
 Mesh cubeCornersMesh(const BoundingBox& _bbox, float _size = 1.0f);
 Mesh cubeCornersMesh(const std::vector<glm::vec3> &_pts, float _size = 1.0);
@@ -39,10 +38,4 @@ Mesh icosphereMesh( float _radius, size_t _iterations );
 Mesh cylinderMesh( float _radius, float _height, int _radiusSegments, int _heightSegments, int _numCapSegments, bool _bCapped, DrawMode _drawMode = TRIANGLES);
 Mesh coneMesh( float _radius, float _height, int _radiusSegments, int _heightSegments, int _capSegments, DrawMode _drawMode = TRIANGLES);
 
-Mesh toTerrain( const Image& _image,
-                const float _zScale,
-                const float _maxError = 0.001f, 
-                const float _baseHeight = 0.0f,
-                const int _maxTriangles = 0, 
-                const int _maxPoints = 0 );
 }

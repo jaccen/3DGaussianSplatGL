@@ -28,7 +28,7 @@ public:
     Vbo(const Mesh& _mesh);
     Vbo(const std::vector<glm::vec2> &_vertices);
     Vbo(const std::vector<glm::vec3> &_vertices);
-    Vbo(VertexLayout* _vertexlayout, DrawMode _drawMode = TRIANGLES);
+    Vbo(VertexLayout* _vertexlayout, GLenum _drawMode = GL_TRIANGLES);
     virtual ~Vbo();
 
     void load(const Mesh& _mesh);
@@ -39,13 +39,14 @@ public:
     void operator = (const std::vector<glm::vec2> &_vertices );
     void operator = (const std::vector<glm::vec3> &_vertices );
 
-    GLenum getDrawMode() { return m_drawMode; }
-    VertexLayout* getVertexLayout() { return m_vertexLayout; };
-
     void setDrawType(GLenum _drawType = GL_STATIC_DRAW);
-    // void setDrawMode(GLenum _drawMode = GL_TRIANGLES);  // Set Draw mode for the Vbo object
+    void setDrawMode(GLenum _drawMode = GL_TRIANGLES);  // Set Draw mode for the Vbo object
+    GLenum getDrawMode() { return m_drawMode; }
+    
     void setDrawMode(DrawMode _drawMode = TRIANGLES);
     void setVertexLayout(VertexLayout* _vertexLayout);  // Set Vertex Layout for the Vbo object
+
+    VertexLayout* getVertexLayout() { return m_vertexLayout; };
 
     /*
      * Adds a single vertex to the mesh; _vertex must be a pointer to the beginning of a vertex structured

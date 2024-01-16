@@ -14,7 +14,6 @@
 #include "../gl/pingpong.h"
 #include "../gl/pyramid.h"
 
-#include "image.h"
 #include "light.h"
 #include "camera.h"
 #include "model.h"
@@ -32,7 +31,7 @@ typedef std::map<std::string, TextureCube*>     TextureCubesMap;
 typedef std::map<std::string, Light*>           LightsMap;
 typedef std::map<std::string, Camera*>          CamerasMap;
 typedef std::map<std::string, Model*>           ModelsMap;
-typedef std::map<std::string, Material*>        MaterialsMap;
+typedef std::map<std::string, Material>         MaterialsMap;
 typedef std::map<std::string, Shader*>          ShadersMap;
 
 typedef std::map<std::string, Font*>            FontsMap;
@@ -51,7 +50,6 @@ public:
     // Textures
     TexturesMap         textures;
     virtual bool        addTexture(const std::string& _name, const std::string& _path, bool _flip = true, bool _verbose = true);
-    virtual bool        addTexture(const std::string& _name, const Image& _image, bool _flip = true, bool _verbose = true);
     virtual bool        addBumpTexture(const std::string& _name, const std::string& _path, bool _flip = true, bool _verbose = true);
     virtual void        printTextures();
     virtual void        clearTextures();
@@ -61,6 +59,7 @@ public:
     virtual bool        addStreamingTexture(const std::string& _name, const std::string& _url, bool _flip = true, bool _device = false, bool _verbose = true);
     virtual bool        addStreamingAudioTexture(const std::string& _name, const std::string& device_id, bool _flip = false, bool _verbose = true);
     virtual void        printStreams();
+    virtual void        clearStreams();
 
     virtual void        setStreamPlay(const std::string& _name);
     virtual void        setStreamStop(const std::string& _name);
@@ -86,14 +85,11 @@ public:
     virtual bool        addCubemap(const std::string& _name, const std::string& _filename, bool _verbose = true);
     virtual void        clearCubemaps();
     virtual void        printCubemaps();
-    virtual void        printCubemapSH();
 
     // Skybox
     virtual void        setSunPosition(const glm::vec3& _v);
     virtual void        setSunPosition(float _az, float _elev, float _distance = 10000.0f);
     virtual void        setSkyTurbidity(float _turbidity);
-    virtual void        setSkyFlip(bool _flip) { m_skyboxFlip = _flip; }
-    virtual void        setSkySize(size_t _size) { m_skyboxSize = _size; }
     virtual void        setGroundAlbedo(const glm::vec3& _albedo);
     virtual float       getSunAzimuth() const;
     virtual float       getSunElevation() const;
@@ -145,8 +141,6 @@ public:
 
 protected:
     SkyData             m_skybox;
-    size_t              m_skyboxSize;
-    bool                m_skyboxFlip;
 
     size_t              m_streamsPrevs;
     bool                m_streamsPrevsChange;

@@ -15,8 +15,7 @@ enum WindowStyle {
     UNDECORATED,
     UNDECORATED_ALLWAYS_ON_TOP,
     FULLSCREEN,
-    LENTICULAR,
-    EMBEDDED
+    LENTICULAR
 };
 
 struct WindowProperties {
@@ -81,11 +80,9 @@ void        setViewport(float _width, float _height);
 void        setWindowSize(int _width, int _height);
 void        setWindowTitle(const char* _title);
 void        setWindowVSync(bool _value);
-void        setWindowIcon(unsigned char* _data, size_t _width, size_t _height);
 
 bool        isFullscreen();
 void        setFullscreen(bool _fullscreen);
-
 int         getScreenWidth();
 int         getScreenHeight();
 float       getPixelDensity(bool _compute = false);
@@ -114,7 +111,6 @@ int         getRestUs();
 // Mouse Keyboards
 // ---------------------------------------
 void        setMousePosition(float _x, float _y);
-void        setMouseVisibility(bool _visible);
 
 float       getMouseX();
 float       getMouseY();
@@ -136,6 +132,5 @@ void    setMousePressCallback(std::function<void(float, float, int)>);
 void    setMouseReleaseCallback(std::function<void(float, float, int)>);
 void    setMouseDragCallback(std::function<void(float, float, int)>);
 void    setScrollCallback(std::function<void(float)>);
-void    setDropCallback(std::function<void(int, const char**)>);
 
 }

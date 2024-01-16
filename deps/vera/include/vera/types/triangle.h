@@ -3,7 +3,8 @@
 #include <vector>
 
 #include "glm/glm.hpp"
-#include "vera/types/material.h"
+
+// #include "vera/types/material.h"
 
 namespace vera {
 
@@ -28,16 +29,8 @@ public :
     const glm::vec3&    getVertex(size_t _index) const { return m_vertices[_index]; }
     glm::vec3           getVertex(const glm::vec3& _barycenterCoord ) const;
 
-    glm::vec3           getCentroid() const { return m_centroid; }
-    glm::vec3           getMin() const { return glm::vec3(  std::min(m_vertices[0].x, std::min(m_vertices[1].x, m_vertices[2].x)),
-                                                            std::min(m_vertices[0].y, std::min(m_vertices[1].y, m_vertices[2].y)),
-                                                            std::min(m_vertices[0].z, std::min(m_vertices[1].z, m_vertices[2].z)) ); }
-    glm::vec3           getMax() const { return glm::vec3(  std::max(m_vertices[0].x, std::max(m_vertices[1].x, m_vertices[2].x)),
-                                                            std::max(m_vertices[0].y, std::max(m_vertices[1].y, m_vertices[2].y)),
-                                                            std::max(m_vertices[0].z, std::max(m_vertices[1].z, m_vertices[2].z)) ); }
-    glm::vec3           getBarycentric() const;
+    glm::vec3           getCentroid() const { return (m_vertices[0] + m_vertices[1] + m_vertices[2]) * 0.3333333333333f; }
     glm::vec3           getBarycentricOf( const glm::vec3& _p ) const;
-    static glm::vec3    getBarycentric(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2);
     
     bool                haveColors() const { return !m_colors.empty(); }
     void                setColor(const glm::vec4 &_color);
@@ -49,7 +42,7 @@ public :
     bool                haveNormals() const { return !m_normals.empty(); }
     void                setNormal(size_t _index, const glm::vec3& _normal);
     const glm::vec3&    getNormal() const { return m_normal; }
-    const glm::vec3&    getNormal(size_t _index) const;
+    const glm::vec3&    getNormal(size_t _index) const { return m_normals[_index]; }
     glm::vec3           getNormal(const glm::vec3& _barycenterCoord ) const;
 
     bool                haveTexCoords() const { return !m_texCoords.empty(); }
@@ -62,23 +55,18 @@ public :
     const glm::vec4&    getTangent(size_t _index) const { return m_tangents[_index]; }
     glm::vec4           getTangent(const glm::vec3& _barycenterCoord ) const;
     
-    Material*           material = nullptr;
-    // size_t              getClosestCoorner(const glm::vec3& _p) const;
-    glm::vec3           getClosestPoint(const glm::vec3& _p) const;
-    float               getClosestDistance(const glm::vec3& _p) const;
-    float               getClosestSignedDistance(const glm::vec3& _p) const;
-    glm::vec4           getClosestRGBSignedDistance(const glm::vec3& _p) const;
+    // MaterialConstPtr    material = nullptr;
 
-    static bool         compare(const Triangle& _a, const Triangle& _b, size_t _axis) {
-        return _a.getCentroid()[_axis] < _b.getCentroid()[_axis];
+    static bool         compare(const Triangle& a, const Triangle& b, int axis) {
+        return a.getCentroid()[axis] < b.getCentroid()[axis];
     }
+
     static bool         compareX (const Triangle& a, const Triangle& b) { return compare(a, b, 0); }
     static bool         compareY (const Triangle& a, const Triangle& b) { return compare(a, b, 1); }
     static bool         compareZ (const Triangle& a, const Triangle& b) { return compare(a, b, 2); }
-
+    
 private:
     glm::vec3               m_vertices[3];
-    glm::vec3               m_centroid;
     glm::vec3               m_normal;
     float                   m_area;
 

@@ -98,10 +98,9 @@ bool Image::load(const std::string& _path, bool _flip) {
     }
 
     // HDR (radiance rgbE format)
-    else if (ext == "hdr" || ext == "HDR"||
-             ext == "exr" || ext == "EXR" ) {
+    else if (ext == "hdr" || ext == "HDR") {
+        float* pixels = loadPixelsHDR(_path, &m_width, &m_height, _flip);
         m_channels = 3;
-        float* pixels = loadPixelsFloat(_path, &m_width, &m_height, &m_channels, _flip);
         int total = m_width * m_height * m_channels;
         if (total != m_data.size())
             m_data.resize(total);
@@ -113,42 +112,11 @@ bool Image::load(const std::string& _path, bool _flip) {
     return false;
 }
 
-bool Image::save(const std::string& _filepath, bool _vFlip) {
-    size_t total = m_width * m_height;
-    unsigned char *pixels = new unsigned char[total * 4];
-    
-    if (m_channels == 1) {
-        for (size_t i = 0; i < m_data.size(); i++) {
-            float v = m_data[i];
-            pixels[i * 4 + 0] = (unsigned char)(v * 255);
-            pixels[i * 4 + 1] = (unsigned char)(v * 255);
-            pixels[i * 4 + 2] = (unsigned char)(v * 255);
-            pixels[i * 4 + 3] = (unsigned char)(255);
-        } 
-    }
-    else {
-        for (size_t y = 0; y < m_height; y++) {
-            for (size_t x = 0; x < m_width; x++) {
-                size_t index = getIndex(x, y);
-                glm::vec4 c = getColor( index );
-                pixels[(y * m_width + x) * 4 + 0] = (unsigned char)(c.r * 255);
-                pixels[(y * m_width + x) * 4 + 1] = (unsigned char)(c.g * 255);
-                pixels[(y * m_width + x) * 4 + 2] = (unsigned char)(c.b * 255);
-                pixels[(y * m_width + x) * 4 + 3] = (unsigned char)(c.a * 255);
-            }
-        }
-    }
-
-    bool saved = vera::savePixels(_filepath, pixels, m_width, m_height);
-    freePixels(pixels);
-
-    return saved;
-}
-
 bool Image::allocate(size_t _width, size_t _height, size_t _channels) {
     m_width = _width;
     m_height = _height;
     m_channels = _channels;
+    // data = new float[_width * _height * _channels];
     int total = _width * _height * _channels;
 
     if (total != m_data.size())

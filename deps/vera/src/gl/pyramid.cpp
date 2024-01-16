@@ -6,7 +6,7 @@
 
 namespace vera {
 
-Pyramid::Pyramid(): pass(NULL), scale(1.0), m_depth(0) {
+Pyramid::Pyramid(): m_depth(0) {
 }
 
 Pyramid::~Pyramid() {
@@ -25,33 +25,31 @@ void Pyramid::allocate(int _width, int _height) {
     for (unsigned int i = 0; i < m_depth; i++) {
         w *= 0.5f;
         h *= 0.5f;
-        m_downs[i].allocate(w, h, vera::COLOR_FLOAT_TEXTURE, vera::TextureFilter::NEAREST, vera::TextureWrap::CLAMP);
+        m_downs[i].allocate(w, h, vera::COLOR_TEXTURE, vera::TextureFilter::NEAREST, vera::TextureWrap::CLAMP);
     }
     
     for (unsigned int i = 0; i < m_depth; i++) {
         w *= 2.0f;
         h *= 2.0f;
-        m_ups[i].allocate(w, h, vera::COLOR_FLOAT_TEXTURE, vera::TextureFilter::NEAREST, vera::TextureWrap::CLAMP);
+        m_ups[i].allocate(w, h, vera::COLOR_TEXTURE, vera::TextureFilter::NEAREST, vera::TextureWrap::CLAMP);
     }
 }
 
 void Pyramid::process(const vera::Fbo *_input) {
     unsigned int i;
-    // Copy the input to the first downscale
     pass(&m_downs[0], _input, NULL, 0);
 
     // DOWNSCALE
     for (i = 1; i < m_depth; i++)
         pass(&m_downs[i], &(m_downs[i-1]), NULL, i);
     
-    // Copy the last downscale to the first upscale
+    // UPSCALE
     pass(&m_ups[0], &(m_downs[m_depth-2]), &(m_downs[m_depth-1]), m_depth-1);
     
-    // UPSCALE
     for (i = 1; i < m_depth-1; i++)
         pass(&m_ups[i], &(m_downs[m_depth-i-2]), &(m_ups[i-1]), m_depth-1-i);
     
-    // Copy the last upscale to the output
+    // FINISH re inserting the original input
     pass(&m_ups[m_depth-1], _input, &(m_ups[m_depth-2]), 0);
 }
 

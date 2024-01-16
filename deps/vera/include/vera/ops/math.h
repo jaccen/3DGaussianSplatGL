@@ -86,10 +86,6 @@ inline int roundTo(int num, int factor) {
     return num + factor - 1 - (num + factor - 1) % factor;
 }
 
-inline float lerp(float a, float b, float f) {
-    return a + f * (b - a);
-}  
-
 inline float remap(const float& _value, const float& _inputMin, const float& _inputMax, const float& _outputMin, const float& _outputMax, bool _clamp) {
     if (fabs(_inputMin - _inputMax) < std::numeric_limits<float>::epsilon()) { return _outputMin; } else {
         float outVal = ((_value - _inputMin) / (_inputMax - _inputMin) * (_outputMax - _outputMin) + _outputMin);
@@ -112,73 +108,4 @@ inline float remap(const float& _value, const float& _inputMin, const float& _in
         return outVal;
     }
 }
-
-inline glm::vec2 remap(const glm::vec2& _value, const glm::vec2& _inputMin, const glm::vec2& _inputMax, const glm::vec2& _outputMin, const glm::vec2& _outputMax, bool _clamp) {
-    return glm::vec2(   remap(_value.x, _inputMin.x, _inputMax.x, _outputMin.x, _outputMax.x, _clamp),
-                        remap(_value.y, _inputMin.y, _inputMax.y, _outputMin.y, _outputMax.y, _clamp) );
-}
-
-inline glm::vec3 remap(const glm::vec3& _value, const glm::vec3& _inputMin, const glm::vec3& _inputMax, const glm::vec3& _outputMin, const glm::vec3& _outputMax, bool _clamp) {
-    return glm::vec3(   remap(_value.x, _inputMin.x, _inputMax.x, _outputMin.x, _outputMax.x, _clamp),
-                        remap(_value.y, _inputMin.y, _inputMax.y, _outputMin.y, _outputMax.y, _clamp),
-                        remap(_value.z, _inputMin.z, _inputMax.z, _outputMin.z, _outputMax.z, _clamp) );
-}
-
-inline glm::vec4 remap(const glm::vec4& _value, const glm::vec4& _inputMin, const glm::vec4& _inputMax, const glm::vec4& _outputMin, const glm::vec4& _outputMax, bool _clamp) {
-    return glm::vec4(   remap(_value.x, _inputMin.x, _inputMax.x, _outputMin.x, _outputMax.x, _clamp),
-                        remap(_value.y, _inputMin.y, _inputMax.y, _outputMin.y, _outputMax.y, _clamp),
-                        remap(_value.z, _inputMin.z, _inputMax.z, _outputMin.z, _outputMax.z, _clamp),
-                        remap(_value.w, _inputMin.w, _inputMax.w, _outputMin.w, _outputMax.w, _clamp) );
-}
-
-inline glm::mat2 inverseMatrix(const glm::mat2& m) {
-    return glm::mat2(   m[1][1],-m[0][1], -m[1][0], m[0][0]) / (m[0][0]*m[1][1] - m[0][1]*m[1][0]);
-}
-
-inline glm::mat3 inverseMatrix(const glm::mat3& m) {
-    float   b01 =  m[2][2] * m[1][1] - m[1][2] * m[2][1],
-            b11 = -m[2][2] * m[1][0] + m[1][2] * m[2][0],
-            b21 =  m[2][1] * m[1][0] - m[1][1] * m[2][0];
-
-    float det = m[0][0] * b01 + m[0][1] * b11 + m[0][2] * b21;
-
-    return glm::mat3(   b01, (-m[2][2] * m[0][1] + m[0][2] * m[2][1]), (m[1][2] * m[0][1] - m[0][2] * m[1][1]),
-                        b11, (m[2][2] * m[0][0] - m[0][2] * m[2][0]), (-m[1][2] * m[0][0] + m[0][2] * m[1][0]),
-                        b21, (-m[2][1] * m[0][0] + m[0][1] * m[2][0]), (m[1][1] * m[0][0] - m[0][1] * m[1][0])) / det;
-}
-
-inline glm::mat4 inverseMatrix(const glm::mat4& m) {
-    float   b00 = m[0][0] * m[1][1] - m[0][1] * m[1][0],
-            b01 = m[0][0] * m[1][2] - m[0][2] * m[1][0],
-            b02 = m[0][0] * m[1][3] - m[0][3] * m[1][0],
-            b03 = m[0][1] * m[1][2] - m[0][2] * m[1][1],
-            b04 = m[0][1] * m[1][3] - m[0][3] * m[1][1],
-            b05 = m[0][2] * m[1][3] - m[0][3] * m[1][2],
-            b06 = m[2][0] * m[3][1] - m[2][1] * m[3][0],
-            b07 = m[2][0] * m[3][2] - m[2][2] * m[3][0],
-            b08 = m[2][0] * m[3][3] - m[2][3] * m[3][0],
-            b09 = m[2][1] * m[3][2] - m[2][2] * m[3][1],
-            b10 = m[2][1] * m[3][3] - m[2][3] * m[3][1],
-            b11 = m[2][2] * m[3][3] - m[2][3] * m[3][2],
-
-            det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
-
-  return glm::mat4( m[1][1] * b11 - m[1][2] * b10 + m[1][3] * b09,
-                    m[0][2] * b10 - m[0][1] * b11 - m[0][3] * b09,
-                    m[3][1] * b05 - m[3][2] * b04 + m[3][3] * b03,
-                    m[2][2] * b04 - m[2][1] * b05 - m[2][3] * b03,
-                    m[1][2] * b08 - m[1][0] * b11 - m[1][3] * b07,
-                    m[0][0] * b11 - m[0][2] * b08 + m[0][3] * b07,
-                    m[3][2] * b02 - m[3][0] * b05 - m[3][3] * b01,
-                    m[2][0] * b05 - m[2][2] * b02 + m[2][3] * b01,
-                    m[1][0] * b10 - m[1][1] * b08 + m[1][3] * b06,
-                    m[0][1] * b08 - m[0][0] * b10 - m[0][3] * b06,
-                    m[3][0] * b04 - m[3][1] * b02 + m[3][3] * b00,
-                    m[2][1] * b02 - m[2][0] * b04 - m[2][3] * b00,
-                    m[1][1] * b07 - m[1][0] * b09 - m[1][2] * b06,
-                    m[0][0] * b09 - m[0][1] * b07 + m[0][2] * b06,
-                    m[3][1] * b01 - m[3][0] * b03 - m[3][2] * b00,
-                    m[2][0] * b03 - m[2][1] * b01 + m[2][2] * b00) / det;
-}
-
 }

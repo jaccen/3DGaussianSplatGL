@@ -14,11 +14,8 @@
 
 namespace vera {
 
-Shader*     shaderPtr       = nullptr;
-bool        shaderChange    = true; 
-
-HorizontalAlign shapeHAlign = ALIGN_CENTER;
-VerticalAlign   shapeVAlign = ALIGN_MIDDLE;
+Shader*     shaderPtr     = nullptr;
+bool        shaderChange  = true; 
 
 glm::vec4   fill_color      = glm::vec4(1.0f);
 Shader*     fill_shader     = nullptr;
@@ -179,7 +176,6 @@ void clear( const glm::vec4& _color ) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 }
 
-const glm::vec4& getFillColor() { return fill_color; }
 void noFill() { fill_enabled = false; }
 void fill( float _brightness ) { fill( glm::vec4( _brightness, _brightness, _brightness, fill_color.a ) ); }
 void fill( float _red, float _green, float _blue) { fill( glm::vec4( _red, _green, _blue, fill_color.a ) );  }
@@ -194,7 +190,6 @@ void fill( const glm::vec4& _color ) {
         shaderPtr = fill_shader;
 }
 
-const glm::vec4& getStrokeColor() { return stroke_color; }
 void noStroke() { stroke_enabled = false;}
 void stroke( float _brightness ) { stroke( glm::vec4( _brightness, _brightness, _brightness, stroke_color.a ) ); }
 void stroke( float _red, float _green, float _blue) { stroke( glm::vec4( _red, _green, _blue, stroke_color.a ) );  }
@@ -224,7 +219,7 @@ void points(const std::vector<glm::vec2>& _positions, Shader* _program) {
 
 #if defined(__EMSCRIPTEN__)
     Vbo vbo = _positions;
-    vbo.setDrawMode(POINTS);
+    vbo.setDrawMode(GL_POINTS);
     vbo.render(_program);
 #else
 
@@ -251,7 +246,7 @@ void points(const std::vector<glm::vec3>& _positions, Shader* _program) {
 
 #if defined(__EMSCRIPTEN__)
     Vbo vbo = _positions;
-    vbo.setDrawMode(POINTS);
+    vbo.setDrawMode(GL_POINTS);
     vbo.render(_program);
 #else
     #if !defined(PLATFORM_RPI) && !defined(DRIVER_GBM) && !defined(_WIN32)
@@ -331,7 +326,7 @@ void line(const std::vector<glm::vec2>& _positions, Shader* _program) {
 
 #if defined(__EMSCRIPTEN__)
     Vbo vbo = _positions;
-    vbo.setDrawMode(LINE_STRIP);
+    vbo.setDrawMode(GL_LINE_STRIP);
     vbo.render(_program);
 #else
     const GLint location = _program->getAttribLocation("a_position");
@@ -358,7 +353,7 @@ void line(const std::vector<glm::vec3>& _positions, Shader* _program) {
 
 #if defined(__EMSCRIPTEN__)
     Vbo vbo = _positions;
-    vbo.setDrawMode(LINE_STRIP);
+    vbo.setDrawMode(GL_LINE_STRIP);
     vbo.render(_program);
 #else
     const GLint location = _program->getAttribLocation("a_position");
@@ -467,7 +462,7 @@ void image(const Texture *_tex) {
 
     if (billboard_shader == nullptr) {
         billboard_shader = new Shader();
-        billboard_shader->setSource( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
+        billboard_shader->load( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
     }
 
     billboard_shader->use();
@@ -486,7 +481,7 @@ void image(const Texture *_tex, float _x, float _y, float _width, float _height)
 
     if (billboard_shader == nullptr) {
         billboard_shader = new Shader();
-        billboard_shader->setSource( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
+        billboard_shader->load( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
     }
 
     if (_width == 0)
@@ -510,7 +505,7 @@ void image(const TextureStream &_stream) { image(&_stream); }
 void image(const TextureStream *_stream) {
     if (billboard_shader == nullptr) {
         billboard_shader = new Shader();
-        billboard_shader->setSource( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
+        billboard_shader->load( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
     }
 
     billboard_shader->use();
@@ -526,7 +521,7 @@ void image(const TextureStream &_stream, float _x, float _y, float _width, float
 void image(const TextureStream *_stream, float _x, float _y, float _width, float _height, bool _debug) {
     if (billboard_shader == nullptr) {
         billboard_shader = new Shader();
-        billboard_shader->setSource( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
+        billboard_shader->load( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
     }
 
     if (_width == 0)
@@ -556,7 +551,7 @@ void image(const Fbo &_fbo) { image(&_fbo); }
 void image(const Fbo *_fbo) {
     if (billboard_shader == nullptr) {
         billboard_shader = new Shader();
-        billboard_shader->setSource( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
+        billboard_shader->load( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
     }
 
     billboard_shader->use();
@@ -572,7 +567,7 @@ void image(const Fbo &_fbo, float _x, float _y, float _width, float _height) { i
 void image(const Fbo *_fbo, float _x, float _y, float _width, float _height) { 
     if (billboard_shader == nullptr) {
         billboard_shader = new Shader();
-        billboard_shader->setSource( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
+        billboard_shader->load( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
     }
 
     if (_width == 0)
@@ -596,7 +591,7 @@ void imageDepth(const Fbo &_fbo, float _x, float _y, float _width, float _height
 void imageDepth(const Fbo *_fbo, float _x, float _y, float _width, float _height, float _far, float _near) { 
     if (billboard_shader == nullptr) {
         billboard_shader = new Shader();
-        billboard_shader->setSource( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
+        billboard_shader->load( getDefaultSrc(FRAG_DYNAMIC_BILLBOARD), getDefaultSrc(VERT_DYNAMIC_BILLBOARD) );
     }
 
     if (_width == 0)
@@ -642,10 +637,6 @@ Font* getFont(const std::string& _name) {
     return nullptr;
 }
 
-float getFontHeight() {
-    return getFont()->getHeight();
-}
-
 //  FONT
 //
 Font* textFont(const std::string& _name) { 
@@ -659,13 +650,13 @@ Font* textFont(const std::string& _name) {
     return scene->activeFont; 
 }
 
-void textAlign(HorizontalAlign _align, Font* _font) {
+void textAlign(FontHorizontalAlign _align, Font* _font) {
     if (_font == nullptr)
         _font = getFont();
     _font->setAlign( _align );
 }
 
-void textAlign(VerticalAlign _align, Font* _font) {
+void textAlign(FontVerticalAlign _align, Font* _font) {
     if (_font == nullptr)
         _font = getFont();
     _font->setAlign( _align );
@@ -684,7 +675,7 @@ void textSize(float _size, Font* _font) {
     if (getWindowStyle() == LENTICULAR)
         _font->setSize(_size * 3.0f );
     else
-        _font->setSize(_size );
+        _font->setSize(_size * vera::getPixelDensity());
 }
 
 void text(const std::string& _text, const glm::vec2& _pos, Font* _font) { text(_text, _pos.x, _pos.y, _font); }
@@ -705,7 +696,7 @@ void triangles(const std::vector<glm::vec2>& _positions, Shader* _program) {
 
 #if defined(__EMSCRIPTEN__)
     Vbo vbo = _positions;
-    vbo.setDrawMode(TRIANGLES);
+    vbo.setDrawMode(GL_TRIANGLES);
     vbo.render(_program);
 #else
     const GLint location = _program->getAttribLocation("a_position");
@@ -726,7 +717,7 @@ void triangles(const std::vector<glm::vec3>& _positions, Shader* _program) {
 
 #if defined(__EMSCRIPTEN__)
     Vbo vbo = _positions;
-    vbo.setDrawMode(TRIANGLES);
+    vbo.setDrawMode(GL_TRIANGLES);
     vbo.render(_program);
 #else
     const GLint location = _program->getAttribLocation("a_position");
@@ -739,20 +730,18 @@ void triangles(const std::vector<glm::vec3>& _positions, Shader* _program) {
 #endif
 }
 
-void rectAlign(VerticalAlign _align) { shapeVAlign = _align; }
-void rectAlign(HorizontalAlign _align) { shapeHAlign = _align; }
-void rect(const glm::vec2& _pos, const glm::vec2& _size, Shader* _program) { rect(_pos.x, _pos.y, _size.x, _size.y, _program); }
-void rect(float _x, float _y, float _w, float _h, Shader* _program) {
-    if (shapeHAlign == ALIGN_CENTER)
-        _x -= _w * 0.5f;
-    else if (shapeHAlign == ALIGN_RIGHT)
-        _x -= _w;
-    
-    if (shapeVAlign == ALIGN_MIDDLE)
-        _y -= _h * 0.5f;
-    else if (shapeVAlign == ALIGN_BOTTOM)
-        _y -= _h;
+void rect(const glm::vec2& _pos, const glm::vec2& _size, Shader* _program) {
+    rect(_pos.x, _pos.y, _size.x, _size.y, _program);
+}
 
+void rect(float _x, float _y, float _w, float _h, Shader* _program) {
+    // _x = _x * 2.0f - 1.0f;
+    // _y = _y * 2.0f - 1.0f;
+    // _w = _w * 2.0f;
+    // _h = _h * 2.0f;
+    
+    _x -= _w * 0.5f;
+    _y -= _h * 0.5f;
     std::vector<glm::vec2> coorners = { glm::vec2(_x, _y),     glm::vec2(_x + _w, _y), 
                                         glm::vec2(_x + _w, _y + _h), glm::vec2(_x, _y + _h),
                                         glm::vec2(_x, _y) };
@@ -803,17 +792,8 @@ Shader createShader(DefaultShaders _frag, DefaultShaders _vert) {
     return s;
 }
 
-void addShader(const std::string& _name, Shader* _shader) { scene->shaders[_name] = _shader; }
-void addShader(const std::string& _name, Shader& _shader) { addShader(_name, &_shader); }
-void addShader(const std::string& _name, const std::string& _fragSrc, const std::string& _vertSrc) {
-    scene->shaders[_name] = new Shader();
-    if (!_fragSrc.empty() && _vertSrc.empty())
-        scene->shaders[_name]->setSource(_fragSrc, getDefaultSrc(VERT_DEFAULT_SCENE));
-    else if (_fragSrc.empty())
-        scene->shaders[_name]->setSource(getDefaultSrc(FRAG_DEFAULT_SCENE), getDefaultSrc(VERT_DEFAULT_SCENE));
-    else
-        scene->shaders[_name]->setSource(_fragSrc, _vertSrc);
-}
+void addShader(Shader& _shader, const std::string& _name) { addShader(&_shader, _name); }
+void addShader(Shader* _shader, const std::string& _name) { scene->shaders[_name] = _shader; }
 
 Shader* getShader(const std::string& _name) {
     ShadersMap::iterator it = scene->shaders.find(_name);
@@ -894,8 +874,8 @@ void shader(Shader* _program) {
             _program->setUniform("u_lightColor", it->second->color);
             _program->setUniform("u_lightIntensity", it->second->intensity);
 
-            // if (it->second->getLightType() != vera::LIGHT_DIRECTIONAL)
-            _program->setUniform("u_light", it->second->getPosition());
+            if (it->second->getLightType() != vera::LIGHT_DIRECTIONAL)
+                _program->setUniform("u_light", it->second->getPosition());
             if (it->second->getLightType() == vera::LIGHT_DIRECTIONAL || it->second->getLightType() == vera::LIGHT_SPOT)
                 _program->setUniform("u_lightDirection", it->second->direction);
             if (it->second->falloff > 0)
@@ -928,46 +908,17 @@ void shader(Shader* _program) {
     }
 }
 
-void addTexture(const std::string& _name, const std::string& _filename, bool _vFlip, TextureFilter _filter, TextureWrap _wrap) {
-    Texture* tex = new Texture();
-    if (tex->load(_filename, _vFlip, _filter, _wrap))
-        scene->textures[_name] = tex;
-    else
-        delete tex;
-}
-
-void addTexture(const std::string& _name, const vera::Image& _image, TextureFilter _filter, TextureWrap _wrap) {
-    Texture* tex = new Texture();
-    if (tex->load(_image, _filter, _wrap))
-        scene->textures[_name] = tex;
-    else
-        delete tex;
-}
-
-Texture* getTexture(const std::string& _name) {
-    vera::TexturesMap::iterator it = scene->textures.find(_name);
-    if (it != scene->textures.end())
-        return it->second;
-    else
-        return nullptr;
-}
-
-void texture(const std::string _name, const std::string _uniform_name) {
-    vera::TexturesMap::iterator it = scene->textures.find(_name);
-    if (it != scene->textures.end())
-        texture(it->second, _uniform_name);
-}
-void texture(Texture& _texture, const std::string _uniform_name) { texture(&_texture, _uniform_name); }
-void texture(Texture* _texture, const std::string _uniform_name) {
+void texture(Texture& _texture, const std::string _name) { texture(&_texture, _name); }
+void texture(Texture* _texture, const std::string _name) {
     if (shaderPtr == nullptr)
         shaderPtr = getFillShader();
     
-    std::string uniform_name = _uniform_name;
-    if (_uniform_name.size() == 0)
-        uniform_name = "u_tex" + toString(shaderPtr->textureIndex);
-    shaderPtr->addDefine("USE_TEXTURE", uniform_name);
-    shaderPtr->setUniformTexture(uniform_name, _texture, shaderPtr->textureIndex );
-    shaderPtr->setUniform(uniform_name + "Resolution", (float)_texture->getWidth(), (float)_texture->getHeight());
+    std::string name = _name;
+    if (_name.size() == 0)
+        name = "u_tex" + toString(shaderPtr->textureIndex);
+    shaderPtr->addDefine("USE_TEXTURE", name);
+    shaderPtr->setUniformTexture(name, _texture, shaderPtr->textureIndex );
+    shaderPtr->setUniform(name + "Resolution", (float)_texture->getWidth(), (float)_texture->getHeight());
     shaderPtr->textureIndex++;
 }
 
@@ -1085,12 +1036,6 @@ void labels() {
         scene->labels[i]->render( scene->activeFont );
 
     setCamera(cam);
-}
-
-void cleanLabels() {
-    for (size_t i = 0; i < scene->labels.size(); i++)
-        delete scene->labels[i];
-    scene->labels.clear();
 }
 
 int labelAt(float _x, float _y) {

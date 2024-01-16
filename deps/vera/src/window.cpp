@@ -80,99 +80,11 @@ namespace vera {
 static bool             left_mouse_button_down = false;
 static GLFWwindow*      window;
 
-#if defined(PLATFORM_RPI)
-#include "GLFW/glfw3native.h"
-EGLDisplay getEGLDisplay() { return glfwGetEGLDisplay(); }
-EGLContext getEGLContext() { return glfwGetEGLContext(window); }
-#endif
-
-typedef struct _rect { int x, y; int w, h; } _rect;
-int _min(int a, int b) {
-    return a < b ? a : b;
-}
-
-int _max(int a, int b) {
-    return a > b ? a : b;
-}
-
-
-#define RECT_INTERSECTS(ra, rb) \
-    ((ra)->x <= ((rb)->x + (rb)->w) && ((ra)->x + (ra)->w) >= (rb)->x && \
-    (ra)->y <= ((rb)->y + (rb)->h) && ((ra)->y + (ra)->h) >= (rb)->y)
-
-static _rect _get_intersection(_rect* ra, _rect* rb) {
-    _rect result = { 0, 0, 0, 0 };
-    if (RECT_INTERSECTS(ra, rb)) {
-        result.x = _max(ra->x, rb->x);
-        result.w = _min((ra->x + ra->w), (rb->x + rb->w)) - result.x;
-        result.y = _max(ra->y, rb->y);
-        result.h = _min((ra->y + ra->h), (rb->y + rb->h)) - result.y;
-    }
-    return result;
-}
-
-GLFWAPI GLFWmonitor* getMonitorFromWindow(GLFWwindow* window) {  
-    GLFWmonitor* result = NULL;
-
-    int monitorCount;
-    GLFWmonitor** monitors;
-    const GLFWvidmode* vidmode;
-
-    unsigned int currentDim, overlapDim;
-    int overlapMonitor, i;
-
-    _rect windowRect;
-    _rect monitorRect;
-    _rect scratchRect = { 0, 0, 0, 0 };
-    _rect overlapRect = { 0, 0, 0, 0 };
-
-    assert(window != NULL);
-
-    // _GLFW_REQUIRE_INIT_OR_RETURN(NULL);
-
-    monitors = glfwGetMonitors(&monitorCount);
-
-    if (monitorCount == 1)
-        result = monitors[0];
-
-    else if (monitorCount > 1) {
-        glfwGetWindowPos(window, &windowRect.x, &windowRect.y);
-        glfwGetWindowSize(window, &windowRect.w, &windowRect.h);
-
-        glfwGetWindowFrameSize(window, &scratchRect.x, &scratchRect.y, 
-        &scratchRect.w, &scratchRect.h);
-
-        windowRect.x -= scratchRect.x;
-        windowRect.y -= scratchRect.y;
-        windowRect.w += scratchRect.x + scratchRect.w;
-        windowRect.h += scratchRect.y + scratchRect.h;
-
-        overlapMonitor = -1;
-
-        for (i = 0; i < monitorCount; i++) {
-            glfwGetMonitorPos(monitors[i], &monitorRect.x, &monitorRect.y);
-
-            vidmode = glfwGetVideoMode(monitors[i]);
-            monitorRect.w = vidmode->width;
-            monitorRect.h = vidmode->height;
-
-            scratchRect = _get_intersection(&windowRect, &monitorRect);
-
-            currentDim = scratchRect.w * scratchRect.h;
-            overlapDim = overlapRect.w * overlapRect.h;
-
-            if (currentDim > 0 && currentDim > overlapDim) {
-                overlapRect = scratchRect;
-                overlapMonitor = i;
-            }
-        }
-
-        if (overlapMonitor >= 0)
-        result = monitors[overlapMonitor];
-    }
-
-    return result;
-}
+    #if defined(PLATFORM_RPI)
+    #include "GLFW/glfw3native.h"
+    EGLDisplay getEGLDisplay() { return glfwGetEGLDisplay(); }
+    EGLContext getEGLContext() { return glfwGetEGLContext(window); }
+    #endif
 
 #else
 
@@ -268,7 +180,6 @@ std::function<void(float, float, int)>  onMousePress;
 std::function<void(float, float, int)>  onMouseDrag;
 std::function<void(float, float, int)>  onMouseRelease;
 std::function<void(float)>              onScroll;
-std::function<void(int, const char**)>  onDrop;
 
 void setViewportResizeCallback(std::function<void(int,int)> _callback) { onViewportResize = _callback; }
 void setKeyPressCallback(std::function<void(int)> _callback) { onKeyPress = _callback; }
@@ -277,7 +188,6 @@ void setMousePressCallback(std::function<void(float, float, int)> _callback) { o
 void setMouseDragCallback(std::function<void(float, float, int)> _callback) { onMouseDrag = _callback; }
 void setMouseReleaseCallback(std::function<void(float, float, int)> _callback) { onMouseRelease = _callback; }
 void setScrollCallback(std::function<void(float)>_callback) { onScroll = _callback; }
-void setDropCallback(std::function<void(int, const char**)>_callback) { onDrop = _callback; }
 
 #if defined(DRIVER_BROADCOM)
     DISPMANX_DISPLAY_HANDLE_T dispman_display;
@@ -400,8 +310,6 @@ void setDropCallback(std::function<void(int, const char**)>_callback) { onDrop =
 
             return eglGetDisplay(gbmDevice);
         #endif
-
-        return nullptr;
     }
 #endif
 
@@ -608,11 +516,6 @@ void setDropCallback(std::function<void(int, const char**)>_callback) { onDrop =
 int initGL(WindowProperties _prop) {
     clock_gettime(CLOCK_MONOTONIC, &time_start);
     properties = _prop;
-
-    if (properties.style == EMBEDDED) {
-        setViewport(properties.screen_width, properties.screen_height);
-        return 0;
-    }
 
 // NON GLFW
 #if !defined(DRIVER_GLFW)
@@ -908,11 +811,6 @@ int initGL(WindowProperties _prop) {
             onScroll(-yoffset * fPixelDensity);
     });
 
-    glfwSetDropCallback(window, [](GLFWwindow* window, int count, const char** paths) {
-        if (onDrop)
-            onDrop(count, paths);
-    });
-
 #if defined(__EMSCRIPTEN__)
     enable_extension("OES_texture_float");
     enable_extension("OES_texture_half_float");
@@ -948,6 +846,7 @@ int initGL(WindowProperties _prop) {
     glfwSetCursorEnterCallback(window, [](GLFWwindow* _window, int entered) {
         mouse.entered = (bool)entered;
     });
+
 
     glfwSetMouseButtonCallback(window, [](GLFWwindow* _window, int _button, int _action, int _mods) {
         mouse.button = _button;
@@ -1061,8 +960,6 @@ bool isGL() {
     return true;
 
 #endif
-
-    return false;
 }
 
 void updateGL() {
@@ -1218,9 +1115,8 @@ void setWindowSize(int _width, int _height) {
     glfwSetWindowSize(window, _width * getPixelDensity(true), _height * getPixelDensity(true));
     return;
 
-#elif defined(DRIVER_GLFW)
-    if (properties.style != EMBEDDED)
-        glfwSetWindowSize(window, _width / getPixelDensity(true), _height / getPixelDensity(true));
+#elif defined(DRIVER_GLFW) 
+    glfwSetWindowSize(window, _width / getPixelDensity(true), _height / getPixelDensity(true));
 #endif
 
     setViewport((float)_width / getPixelDensity(true), (float)_height / getPixelDensity(true));
@@ -1241,7 +1137,6 @@ void setWindowVSync(bool _value) {
 void setViewport(float _width, float _height) {
     viewport.z = _width;
     viewport.w = _height;
-
     updateViewport();
 }
 
@@ -1250,10 +1145,8 @@ void updateViewport() {
     float width = getWindowWidth();
     float height = getWindowHeight();
 
-    if (properties.style != EMBEDDED) {
-        glViewport( (float)viewport.x * fPixelDensity, (float)viewport.y * fPixelDensity,
-                    width, height);
-    }
+    glViewport( (float)viewport.x * fPixelDensity, (float)viewport.y * fPixelDensity,
+                width, height);
 
     orthoMatrix = glm::ortho(   (float)viewport.x * fPixelDensity, width, 
                                 (float)viewport.y * fPixelDensity, height);
@@ -1309,8 +1202,7 @@ bool isFullscreen() {
 }
 
 void setFullscreen(bool _fullscreen) {
-    if ( isFullscreen() == _fullscreen || 
-         properties.style == EMBEDDED)
+    if ( isFullscreen() == _fullscreen )
         return;
 
 #if defined(__EMSCRIPTEN__)
@@ -1331,13 +1223,14 @@ void setFullscreen(bool _fullscreen) {
     }
     
 #elif defined(DRIVER_GLFW)
+
     if ( _fullscreen ) {
         // backup window position and window size
         glfwGetWindowPos( window, &viewport_last.x, &viewport_last.y );
         glfwGetWindowSize( window, &viewport_last.z, &viewport_last.w );
         
         // get resolution of monitor
-        GLFWmonitor* monitor = getMonitorFromWindow(window);
+        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
         const GLFWvidmode * mode = glfwGetVideoMode(monitor);
 
         // switch to full screen
@@ -1355,7 +1248,7 @@ void setFullscreen(bool _fullscreen) {
 
 void setPixelDensity(float _density) { fPixelDensity = _density; }
 float getPixelDensity(bool _compute) {
-    if (_compute && properties.style != EMBEDDED) {
+    if (_compute) {
 #if defined(__EMSCRIPTEN__)
         return emscripten_get_device_pixel_ratio();
 #elif defined(DRIVER_GLFW)
@@ -1369,16 +1262,6 @@ float getPixelDensity(bool _compute) {
     }
     else
         return fPixelDensity;
-}
-
-void setWindowIcon(unsigned char* _data, size_t _width, size_t _height) {
-#if defined(DRIVER_GLFW)
-    GLFWimage image;
-    image.pixels = _data;
-    image.width = _width;
-    image.height = _height;
-    glfwSetWindowIcon(window, 1, &image);
-#endif
 }
 
 const glm::ivec4& getViewport() { return viewport; }
@@ -1415,10 +1298,6 @@ std::string getExtensions() {
 }
 
 bool haveExtension(std::string _name) { 
-    std::string gl_version = getGLVersion();
-    if (gl_version[0] == '4')
-        return true;
-
     if (properties.extensions == "") properties.extensions = std::string((const char*)glGetString(GL_EXTENSIONS));
     return properties.extensions.find(_name) == std::string::npos; 
 }
@@ -1466,7 +1345,7 @@ void    setFps(int _fps) {
     else
         restSec = 1.0f/(float)_fps; 
 }
-double  getFps() { return 1.0/restSec; }
+double  getFps() { return FPS; }
 
 float   getRestSec() { return restSec; }
 int     getRestMs() { return restSec * 1000; }
@@ -1483,16 +1362,6 @@ void    setMousePosition( float _x, float _y ) {
     float h = getWindowHeight();
     float y = h - glm::clamp(_y, 0.0f, h);
     glfwSetCursorPos(window, _x / fPixelDensity , y / fPixelDensity);
-    #endif
-}
-
-void    setMouseVisibility(bool _visible) {
-    #if defined(DRIVER_GLFW)
-    if (_visible)
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    else
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    
     #endif
 }
 

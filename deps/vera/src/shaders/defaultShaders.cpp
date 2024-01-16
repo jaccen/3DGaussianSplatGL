@@ -4,7 +4,6 @@
 #include "vera/shaders/default.h"
 #include "vera/shaders/default_error.h"
 #include "vera/shaders/default_scene.h"
-#include "vera/shaders/default_buffers.h"
 
 #include "vera/shaders/billboard.h"
 #include "vera/shaders/dynamic_billboard.h"
@@ -12,7 +11,6 @@
 #include "vera/shaders/plot.h"
 #include "vera/shaders/fxaa.h"
 #include "vera/shaders/poissonfill.h"
-#include "vera/shaders/jumpFlood.h"
 
 // 3D SCENE
 #include "vera/shaders/light_ui.h"
@@ -139,19 +137,6 @@ std::string getDefaultSrc( DefaultShaders _type ) {
             rta += points_frag_300;
     }
 
-    else if (_type == FRAG_POSITION) {
-        if (versionNumber < 130)
-            rta += default_buffer_position;
-        else if (versionNumber >= 130) 
-            rta += default_buffer_position_300;
-    }
-    else if (_type == FRAG_NORMAL) {
-        if (versionNumber < 130)
-            rta += default_buffer_normal;
-        else if (versionNumber >= 130) 
-            rta += default_buffer_normal_300;
-    }
-
     else if (_type == FRAG_PLOT) {
         if (versionNumber < 130)
             rta += plot_frag;
@@ -164,18 +149,12 @@ std::string getDefaultSrc( DefaultShaders _type ) {
         else if (versionNumber >= 130) 
             rta += fxaa_frag_300;
     }
-    else if (_type == FRAG_POISSONFILL) {
+    else if (_type == FRAG_POISSON) {
         if (versionNumber < 130)
             rta += poissonfill_frag;
         else if (versionNumber >= 130) 
             rta += poissonfill_frag_300;
     } 
-    else if (_type == FRAG_JUMPFLOOD) {
-        if (versionNumber < 130)
-            rta += jumpflood_frag;
-        else if (versionNumber >= 130) 
-            rta += jumpflood_frag_300;
-    }
 
     return rta;
 }

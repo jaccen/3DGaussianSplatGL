@@ -1,7 +1,5 @@
 #pragma once
 
-#include <map>
-
 #include "boundingBox.h"
 #include "node.h"
 #include "material.h"
@@ -10,15 +8,14 @@
 #include "../gl/vbo.h"
 #include "../gl/shader.h"
 
-namespace vera {
 
-typedef std::map<std::string, Shader*>    ShaderMap;
+namespace vera {
 
 class Model : public Node {
 public:
     Model();
     Model(const std::string& _name, const Mesh& _mesh);
-    Model(const std::string& _name, const Mesh& _mesh, Material* _mat);
+    Model(const std::string& _name, const Mesh& _mesh, const Material& _mat);
     virtual ~Model();
 
     bool            loaded() const { return m_model_vbo != nullptr; }
@@ -28,19 +25,19 @@ public:
 
     bool            setGeom(const Mesh& _mesh);
     void            setName(const std::string& _str);
-    bool            setMaterial(Material* _material);
-    void            setShader(const std::string& _fragStr, const std::string& _vertStr);
-    void            setBufferShader(const std::string _bufferName, const std::string& _fragStr, const std::string& _vertStr);
+    bool            setShader(const std::string& _fragStr, const std::string& _vertStr, bool verbose);
+    bool            setMaterial(const Material& _material);
 
-    const std::string&  getName() const { return m_name; }
-    Vbo*                getVbo() { return m_model_vbo; }
-    Vbo*                getVboBbox() { return m_bbox_vbo; }
-    float               getArea() const { return m_area; }
-    const BoundingBox&  getBoundingBox() const { return m_bbox; }
-    Shader*             getShader() { return &mainShader; }
-    Shader*             getBufferShader(const std::string& _bufferName) { return gBuffersShaders[_bufferName]; }
-
+    const std::string& getName() const { return m_name; }
+    Vbo*            getVbo() { return m_model_vbo; }
+    Vbo*            getVboBbox() { return m_bbox_vbo; }
+    float           getArea() const { return m_area; }
+    Shader*         getShadeShader() { return &m_shade; }
+    Shader*         getShadowShader() { return &m_shadow; }
+    const BoundingBox& getBoundingBox() const { return m_bbox; }
+    
     void            render();
+    void            renderShadow();
     
     void            render(Shader* _shader);
     void            renderBbox(Shader* _shader);
@@ -48,11 +45,9 @@ public:
     void            printDefines();
     void            printVboInfo();
 
-    Mesh            mesh;
-
 protected:
-    Shader          mainShader;         // main pass shader
-    ShaderMap       gBuffersShaders;    // shaders use for gBuffers
+    Shader          m_shade;
+    Shader          m_shadow;
     
     Vbo*            m_model_vbo;
     Vbo*            m_bbox_vbo;

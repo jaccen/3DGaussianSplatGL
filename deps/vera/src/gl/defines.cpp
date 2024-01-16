@@ -1,10 +1,6 @@
 #include "vera/gl/defines.h"
 #include "vera/ops/string.h"
 
-#if defined(SUPPORT_EXIV2)
-#include <exiv2/exiv2.hpp>
-#endif
-
 namespace vera {
 
 HaveDefines::HaveDefines() : m_defineChange(false) {
@@ -17,18 +13,17 @@ void HaveDefines::addDefine(const std::string &_define, const std::string &_valu
     std::string define = toUpper( toUnderscore( purifyString(_define) ) );
 
     // if doesn't exist
-    DefinesMap_it it = m_defines.find(define);
-    if (it == m_defines.end()) {
+    if (m_defines.find(define) == m_defines.end()) {
         // add it
         // std::cout << "Adding: " << define <<  " " << _value << std::endl;
         m_defines[define] = _value;
         m_defineChange = true;
     }
     // if its different
-    else if ( it->second != _value){
+    else if ( m_defines[define] != _value){
         // change it
         // std::cout << "Changing: " << define <<  " " << _value << std::endl;
-        it->second = _value;
+        m_defines[define] = _value;
         m_defineChange = true;
     }
 }
@@ -99,32 +94,6 @@ void HaveDefines::delDefine(const std::string &_define) {
 void HaveDefines::printDefines() {
     for (DefinesMap_cit it = m_defines.begin(); it != m_defines.end(); ++it)
         std::cout << "#define " << it->first << " " << it->second << std::endl;
-}
-
-void HaveDefines::addDefinesTo( const std::string &_path ) {
-#if defined(SUPPORT_EXIV2)
-    Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open(_path);
-    assert(image.get() != 0);
-    image->readMetadata();
-
-    Exiv2::ExifData exifData = image->exifData();
-    // Exiv2::IptcData &iptcData = image->iptcData();
-
-    std::string defines = "";
-    for (DefinesMap_cit it = m_defines.begin(); it != m_defines.end(); ++it) {
-        defines += it->first + " " + it->second + "\n";
-    }
-    // Exiv2::ExifKey key("Exif.Photo.UserComment");
-    // Exiv2::Value::AutoPtr value = Exiv2::Value::create(Exiv2::asciiString);
-    // value->read(defines);
-
-    exifData["Exif.Photo.UserComment"] = defines;
-    image->setExifData(exifData);
-
-    image->setComment(defines);
-
-    image->writeMetadata();
-#endif
 }
 
 void HaveDefines::mergeDefines( HaveDefines *_haveDefines ) {

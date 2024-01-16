@@ -10,15 +10,6 @@
 #include "stb_image_write.h"
 #include "extract_depthmap.h"
 
-#if defined(_WIN32)
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#endif
-
-#define TINYEXR_IMPLEMENTATION
-#include "tinyexr.h"
-
 namespace vera {
 
 unsigned char* loadPixels(unsigned char const *_data, int len, int *_width, int *_height, vera::Channels _channels, bool _vFlip) {
@@ -41,36 +32,11 @@ uint16_t* loadPixels16(const std::string& _path, int *_width, int *_height, Chan
     return pixels;
 }
 
-float* loadPixelsFloat(const std::string& _path, int *_width, int *_height, int* _channels, bool _vFlip) {
-    std::string ext = getExt(_path);
-
-    if (ext == "hdr" || ext == "HDR") {    
-        stbi_set_flip_vertically_on_load(_vFlip);
-        int comp;
-        *_channels = 3;
-        return stbi_loadf(_path.c_str(), _width, _height, &comp, 0);
-    }
-    else if (ext == "exr" || ext == "EXR") {
-
-        *_channels = 4;
-        float* pixels;
-        const char* err = NULL; // or nullptr in C++11
-        int ret = LoadEXR(&pixels, _width, _height, _path.c_str(), &err);
-        if (ret != TINYEXR_SUCCESS) {
-            if (err) {
-                fprintf(stderr, "ERR : %s\n", err);
-                FreeEXRErrorMessage(err); // release memory of error message.
-            }
-            return nullptr;
-        }
-
-        if (_vFlip)
-            flipPixelsVertically<float>(pixels, *_width, *_height, *_channels);
-
-        return pixels;
-    }
-
-    return nullptr;
+float* loadPixelsHDR(const std::string& _path, int *_width, int *_height, bool _vFlip) {
+    stbi_set_flip_vertically_on_load(_vFlip);
+    int comp;
+    float* pixels = stbi_loadf(_path.c_str(), _width, _height, &comp, 0);
+    return pixels;
 }
 
 unsigned char* loadPixelsDepth(const std::string& _path, int *_width, int *_height, bool _vFlip) {
@@ -84,19 +50,12 @@ unsigned char* loadPixelsDepth(const std::string& _path, int *_width, int *_heig
                         &dm, &dm_size, &dm_type) == 1) {
 
         if (dm_type == TYPE_JPEG) {
-            return loadPixels(dm, dm_size, _width, _height, RGB, _vFlip);
+            int width, height;
+            return loadPixels(dm, dm_size, &width, &height, RGB, _vFlip);
         }
     }
 
     return nullptr;
-}
-
-unsigned char* loadPixelsBase64(const std::string& _base64, int *_width, int *_height, Channels _channels, bool _vFlip) {
-    unsigned char* data = new unsigned char[_base64.size()];
-    size_t len = decodeBase64(_base64, data);
-    int comp;
-    unsigned char* pixels = stbi_load_from_memory(data, len, _width, _height, &comp, (_channels == RGB)? STBI_rgb : STBI_rgb_alpha);
-    return pixels;
 }
 
 bool savePixels(const std::string& _path, unsigned char* _pixels, int _width, int _height) {
@@ -165,23 +124,16 @@ bool savePixels16(const std::string& _path, unsigned short* _pixels, int _width,
     return true;
 }
 
-bool savePixelsFloat(const std::string& _path, float* _pixels, int _width, int _height) {
+bool savePixelsHDR(const std::string& _path, float* _pixels, int _width, int _height) {
     int channels = 4;
 
     // Flip the image on Y
     flipPixelsVertically<float>(_pixels, _width, _height, channels);
     
-    std::string ext = getExt(_path);
-    if (ext == "hdr" || ext == "HDR") {    
-        if (0 == stbi_write_hdr(_path.c_str(), _width, _height, channels, _pixels)) {
-            std::cout << "Can't create file " << _path << std::endl;
-            return false;
-        }
+    if (0 == stbi_write_hdr(_path.c_str(), _width, _height, channels, _pixels)) {
+        std::cout << "Can't create file " << _path << std::endl;
+        return false;
     }
-    else if (ext == "exr" || ext == "EXR") { 
-        // TODO
-    }
-
     return true;
 }
 

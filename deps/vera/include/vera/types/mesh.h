@@ -4,7 +4,6 @@
 #include <string>
 
 #include "triangle.h"
-#include "material.h"
 
 #include "glm/glm.hpp"
 
@@ -37,13 +36,8 @@ public:
     void                setDrawMode(DrawMode _drawMode = TRIANGLES) { m_drawMode = _drawMode; }
     DrawMode            getDrawMode() const { return m_drawMode; }
 
-    void                setMaterial(Material* _material) { m_material = _material; }
-    Material*           getMaterial() { return m_material; }
-    bool                haveMaterial() const { return m_material != nullptr; }
-
     // VERTICES
     void                addVertex(const glm::vec3 &_point);
-    void                addVertex(float _x, float _y, float _z) { addVertex( glm::vec3(_x, _y, _z) ); } 
     void                addVertices(const std::vector<glm::vec3> &_verts);
     void                addVertices(const glm::vec3* _verts, int _amt);
 
@@ -53,11 +47,11 @@ public:
     const glm::vec3&    getVertex(size_t _index) const { return m_vertices[_index]; }
     const std::vector<glm::vec3>& getVertices() const { return m_vertices; }
 
+
     // COLORS
     void                setColor(const glm::vec4 &_color);
     void                addColor(const glm::vec4 &_color);
     void                addColors(const std::vector<glm::vec4> &_colors);
-    void                addColor(float _r, float _g, float _b, float _a) { addColor(glm::vec4(_r, _g, _b, _a)); };
 
     const bool          haveColors() const { return !m_colors.empty(); }
     void                clearColors() { m_colors.clear(); }
@@ -65,9 +59,9 @@ public:
     const glm::vec4&    getColor(size_t _index) const { return m_colors[_index]; }
     const std::vector<glm::vec4>& getColors() const { return m_colors; }
     
+
     // NORMALS
     void                addNormal(const glm::vec3 &_normal);
-    void                addNormal(float _x, float _y, float _z) { addNormal( glm::vec3(_x, _y, _z) ); }
     void                addNormals(const std::vector<glm::vec3> &_normals );
 
     const bool          haveNormals() const { return !m_normals.empty(); }
@@ -80,6 +74,7 @@ public:
     void                invertNormals();
     void                flatNormals();
 
+
     // TANGENTS
     void                addTangent(const glm::vec4 &_tangent);
 
@@ -90,9 +85,9 @@ public:
     void                clearTangets() { m_tangents.clear(); }
     bool                computeTangents();
 
+
     // TEXTURE COORDINATES
     void                addTexCoord(const glm::vec2 &_uv);
-    void                addTexCoord(float _u, float _v) { addTexCoord( glm::vec2(_u, _v) ); }
     void                addTexCoords(const std::vector<glm::vec2> &_uvs);
 
     const bool          haveTexCoords() const { return !m_texCoords.empty(); }
@@ -120,7 +115,6 @@ public:
     std::vector<Triangle>   getTriangles() const;
     std::vector<glm::ivec3> getTrianglesIndices() const;
 
-
 private:
     std::vector<glm::vec4>  m_colors;
     std::vector<glm::vec4>  m_tangents;
@@ -130,7 +124,6 @@ private:
     std::vector<INDEX_TYPE> m_indices;
 
     DrawMode                m_drawMode;
-    Material*               m_material;
 
     friend void transform(Mesh&, const glm::quat&);
     friend void transform(Mesh&, const glm::mat3&);

@@ -168,12 +168,11 @@ varying vec3    v_normal;
 
 #ifdef MODEL_VERTEX_TEXCOORD
 attribute vec2  a_texcoord;
-#endif
 varying vec2    v_texcoord;
+#endif
 
 void main(void) {
     v_position = a_position;
-    v_texcoord = a_position.xy * 0.5 + 0.5;
     
 #ifdef MODEL_VERTEX_COLOR
     v_color = a_color;
@@ -236,10 +235,8 @@ precision mediump float;
 
 uniform mat4    u_modelViewProjectionMatrix;
 in      vec4    a_position;
-out     vec2    v_texcoord;
 
 void main(void) {
-    v_texcoord = a_position.xy;
     gl_Position = u_modelViewProjectionMatrix * a_position;
 }
 )";

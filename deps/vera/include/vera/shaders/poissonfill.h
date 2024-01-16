@@ -51,10 +51,8 @@ varying vec2 v_texcoord;
 
 void main() {
     vec4 color = vec4(0.0);
-    // vec2 pixel = u_pixel;
-    vec2 pixel = 1.0/u_resolution;
-    vec2 st = gl_FragCoord.xy * pixel;
-    // vec2 st = v_texcoord;
+    vec2 pixel = u_pixel;
+    vec2 st = v_texcoord;
 
     if (!u_pyramidUpscaling) {
         // DOWNSCALE
@@ -66,7 +64,7 @@ void main() {
                 vec2 uv = st + vec2(float(dx), float(dy)) * pixel * 0.5;
                 if (uv.x <= 0.0 || uv.x >= 1.0 || uv.y <= 0.0 || uv.y >= 1.0)
                     continue;
-                color += texture2D(u_pyramidTex0, uv) * H1(dx) * H1(dy);
+                color += texture2D(u_pyramidTex0, saturate(uv)) * H1(dx) * H1(dy);
             }
         }
     }
@@ -79,9 +77,7 @@ void main() {
         for (int dy = -1; dy <= 1; dy++) {
             for (int dx = -1; dx <= 1; dx++) {
                 vec2 uv = st + vec2(float(dx), float(dy)) * pixel;
-                if (uv.x <= 0.0 || uv.x >= 1.0 || uv.y <= 0.0 || uv.y >= 1.0)
-                    continue;
-                color += texture2D(u_pyramidTex0, uv) * G(dx) * G(dy);
+                color += texture2D(u_pyramidTex0, saturate(uv)) * G(dx) * G(dy);
             }
         }
 
@@ -90,7 +86,7 @@ void main() {
                 vec2 uv = st + vec2(float(dx), float(dy)) * pixel * 2.0;
                 if (uv.x <= 0.0 || uv.x >= 1.0 || uv.y <= 0.0 || uv.y >= 1.0)
                     continue;
-                color += texture2D(u_pyramidTex1, uv) * h2 * H1(dx) * H1(dy);
+                color += texture2D(u_pyramidTex1, saturate(uv)) * h2 * H1(dx) * H1(dy);
             }
         }
     }
@@ -110,6 +106,7 @@ uniform sampler2D   u_pyramidTex1;
 uniform bool        u_pyramidUpscaling;
 
 uniform vec2        u_resolution;
+uniform vec2        u_pixel;
 
 in      vec2        v_texcoord;
 out     vec4        fragColor;
@@ -143,9 +140,8 @@ float G(int i) {
 
 void main() {
     vec4 color = vec4(0.0);
-    vec2 pixel = 1.0/u_resolution;
-    vec2 st = gl_FragCoord.xy * pixel;
-    // vec2 st = v_texcoord;
+    vec2 pixel = u_pixel;
+    vec2 st = v_texcoord;
 
     if (!u_pyramidUpscaling) {
         // DOWNSCALE

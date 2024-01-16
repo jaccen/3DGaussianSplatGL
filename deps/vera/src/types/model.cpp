@@ -1,5 +1,3 @@
-#include <regex>
-
 #include "vera/types/model.h"
 
 #include "vera/ops/meshes.h"
@@ -13,6 +11,9 @@ namespace vera {
 Model::Model():
     m_model_vbo(nullptr), m_bbox_vbo(nullptr),
     m_name(""), m_area(0.0f) {
+
+    addDefine("LIGHT_SHADOWMAP", "u_lightShadowMap");
+    addDefine("LIGHT_SHADOWMAP_SIZE", "2048.0");
 }
 
 Model::Model(const std::string& _name, const Mesh &_mesh):
@@ -22,7 +23,7 @@ Model::Model(const std::string& _name, const Mesh &_mesh):
     setGeom(_mesh);
 }
 
-Model::Model(const std::string& _name, const Mesh &_mesh, Material* _mat):
+Model::Model(const std::string& _name, const Mesh &_mesh, const Material &_mat):
     m_model_vbo(nullptr), m_bbox_vbo(nullptr), 
     m_area(0.0f) {
     setName(_name);
@@ -46,33 +47,6 @@ void Model::clear() {
     }
 }
 
-void Model::addDefine(const std::string& _define, const std::string& _value) { 
-    mainShader.addDefine(_define, _value); 
-    for (vera::ShaderMap::iterator it = gBuffersShaders.begin(); it != gBuffersShaders.end(); ++it) {
-        if (it->second)
-            it->second->addDefine(_define, _value);
-    }
-}
-
-void Model::delDefine(const std::string& _define) { 
-    mainShader.delDefine(_define);
-    for (vera::ShaderMap::iterator it = gBuffersShaders.begin(); it != gBuffersShaders.end(); ++it){
-        if (it->second)
-            it->second->delDefine(_define);
-    }
-
-};
-
-bool Model::setMaterial(Material* _material) {
-    mainShader.mergeDefines(_material);
-    for (vera::ShaderMap::iterator it = gBuffersShaders.begin(); it != gBuffersShaders.end(); ++it) {
-        if (it->second)
-            it->second->mergeDefines(_material);
-    }
-    mesh.setMaterial( _material );
-    return true;
-}
-
 void Model::setName(const std::string& _str) {
     if (!m_name.empty())
         delDefine( "MODEL_NAME_" + toUpper( toUnderscore( purifyString(m_name) ) ) );
@@ -83,9 +57,26 @@ void Model::setName(const std::string& _str) {
     }
 }
 
-bool Model::setGeom(const Mesh& _mesh) {
-    mesh = _mesh;
+void Model::addDefine(const std::string& _define, const std::string& _value) { 
+    m_shade.addDefine(_define, _value); 
+    m_shadow.addDefine(_define, _value); 
+}
 
+void Model::delDefine(const std::string& _define) { 
+    m_shade.delDefine(_define);
+    m_shadow.delDefine(_define); 
+};
+
+void Model::printDefines() {
+    m_shade.printDefines();
+}
+
+void Model::printVboInfo() {
+    if (m_model_vbo)
+        m_model_vbo->printInfo();
+}
+
+bool Model::setGeom(const Mesh& _mesh) {
     // Load Geometry VBO
     m_model_vbo = new Vbo(_mesh);
 
@@ -128,37 +119,31 @@ bool Model::setGeom(const Mesh& _mesh) {
     return true;
 }
 
-void Model::setShader(const std::string& _fragStr, const std::string& _vertStr) {
-    mainShader.setSource(_fragStr, _vertStr);
+bool Model::setMaterial(const Material &_material) {
+    m_shade.mergeDefines(&_material);
+    m_shadow.mergeDefines(&_material);
+    return true;
 }
 
-void Model::setBufferShader(const std::string _name, const std::string& _fragStr, const std::string& _vertStr) {
-    ShaderMap::iterator it = gBuffersShaders.find(_name);
+bool Model::setShader(const std::string& _fragStr, const std::string& _vertStr, bool verbose) {
+    if (m_shade.loaded())
+        m_shade.detach(GL_FRAGMENT_SHADER | GL_VERTEX_SHADER);
 
-    if (it == gBuffersShaders.end()) {
-        gBuffersShaders[_name] = new Shader();
-        it = gBuffersShaders.find(_name);
-    }
-    else
-        if (it->second == nullptr)
-            it->second = new Shader();
+    if (m_shadow.loaded())
+        m_shadow.detach(GL_FRAGMENT_SHADER | GL_VERTEX_SHADER);
 
-    it->second->mergeDefines(&mainShader);
-    it->second->setSource( _fragStr, _vertStr);
-}
-
-void Model::printDefines() {
-    mainShader.printDefines();
-}
-
-void Model::printVboInfo() {
-    if (m_model_vbo)
-        m_model_vbo->printInfo();
+    return  m_shade.load( _fragStr, _vertStr, SHOW_MAGENTA_SHADER, verbose) && 
+            m_shadow.load( getDefaultSrc(FRAG_ERROR), _vertStr); // Use magenta frag error as a passthrough frag shader.
 }
 
 void Model::render() {
-    if (m_model_vbo && mainShader.isLoaded())
-        m_model_vbo->render(&mainShader);
+    if (m_model_vbo && m_shade.loaded())
+        m_model_vbo->render(&m_shade);
+}
+
+void Model::renderShadow() {
+    if (m_model_vbo && m_shadow.loaded())
+        m_model_vbo->render(&m_shadow);
 }
 
 void Model::render(Shader* _shader) {

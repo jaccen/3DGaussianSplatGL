@@ -18,7 +18,6 @@ public:
     virtual     ~Image();
 
     virtual bool    load(const std::string& _filepath, bool _vFlip = false);
-    virtual bool    save(const std::string& _filepath, bool _vFlip = false);
 
     virtual bool    allocate(size_t _width, size_t _height, size_t _channels);
     virtual bool    isAllocated() const { return m_data.size() != 0; }
@@ -42,7 +41,6 @@ public:
     virtual void    setValue(size_t _index, float _data);
     virtual void    setValue(size_t _index, const float* _array1D, int _n);
 
-    virtual void    setChannels(size_t _channels) { m_channels = _channels; }
     virtual void    setColor(size_t _index, const glm::vec3& _color) { setValue( _index, &_color[0], 3); }
     virtual void    setColor(size_t _index, const glm::vec4& _color) { setValue( _index, &_color[0], std::min(4, m_channels)); }
 
@@ -63,8 +61,6 @@ public:
     virtual Image&  operator*= (float _value);
     virtual Image&  operator/= (float _value);
 
-    std::string         name;
-
 protected:
     std::string         m_path;
     std::vector<float>  m_data;
@@ -74,8 +70,5 @@ protected:
 
     friend class        Texture;
 };
-
-// typedef std::shared_ptr<Image> ImagePtr;
-// typedef std::shared_ptr<Image const> ImageConstPtr;
 
 }

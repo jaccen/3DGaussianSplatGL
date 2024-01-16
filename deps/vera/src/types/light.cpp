@@ -9,6 +9,7 @@ Light::Light():
     direction(0.0),
     intensity(1.0),
     falloff(-1.0),
+    // bUpdateShadowMap(true),
     m_mvp_biased(1.0), 
     m_mvp(1.0), 
     m_lightType(LIGHT_DIRECTIONAL) {
@@ -47,6 +48,11 @@ Light::Light(glm::vec3 _pos, glm::vec3 _dir, float _falloff): m_mvp_biased(1.0),
 Light::~Light() {
 }
 
+// void Light::setPosition(const glm::vec3& _pos) {
+//     Node::setPosition(_pos);
+//     bUpdateShadowMap = true;
+// }
+
 const glm::mat4& Light::getMVPMatrix( const glm::mat4 &_model, float _area) {
     // TODO:
     //      - Extend this to match different light types and not just directional
@@ -60,7 +66,7 @@ const glm::mat4& Light::getMVPMatrix( const glm::mat4 &_model, float _area) {
         // Compute the MVP matrix from the light's point of view
         m_projectionMatrix = glm::ortho<float>(-_area, _area, -_area, _area, m_near, m_far);
         m_viewMatrix = glm::lookAt(glm::normalize(getPosition()), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-        m_mvp = m_projectionMatrix * m_viewMatrix * glm::mat4(1.0f);// * _model;
+        m_mvp = m_projectionMatrix * m_viewMatrix * _model;
 
         // Make biased MVP matrix (0 ~ 1) instad of (-1 to 1)
         const glm::mat4 biasMatrix(
@@ -71,6 +77,8 @@ const glm::mat4& Light::getMVPMatrix( const glm::mat4 &_model, float _area) {
         );
 
         m_mvp_biased = biasMatrix * m_mvp;
+
+        // bUpdateShadowMap = true;
         bChange = false;
     }
 
@@ -83,8 +91,6 @@ void Light::bindShadowMap() {
     if (m_shadowMap.getDepthTextureId() == 0)
     #if defined(PLATFORM_RPI)
         m_shadowMap.allocate(512, 512, DEPTH_TEXTURE);
-    #elif defined(PLATFORM_OSX)
-        m_shadowMap.allocate(2048, 2048, COLOR_DEPTH_TEXTURES);
     #else
         m_shadowMap.allocate(2048, 2048, DEPTH_TEXTURE);
     #endif

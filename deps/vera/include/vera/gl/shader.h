@@ -20,6 +20,7 @@ enum ShaderErrorResolve {
     SHOW_MAGENTA_SHADER,
     DONT_KEEP_SHADER,
     KEEP_BROKEN_SHADER,
+
 };
 
 class Shader : public HaveDefines {
@@ -29,11 +30,11 @@ public:
 
     void    operator = (const Shader &_parent );
     void    setSource(const std::string& _fragmentSrc, const std::string& _vertexSrc);
-    void    setDefaultErrorBehaviour(ShaderErrorResolve _error) { m_error_screen = _error; }
 
-    bool    load(const std::string& _fragmentSrc, const std::string& _vertexSrc, ShaderErrorResolve _onError = SHOW_MAGENTA_SHADER, bool _verbose = false);
     void    use();
-
+    bool    load(const std::string& _fragmentSrc, const std::string& _vertexSrc, ShaderErrorResolve _onError = SHOW_MAGENTA_SHADER, bool _verbose = false);
+    bool    reload(ShaderErrorResolve _onError = SHOW_MAGENTA_SHADER, bool _verbose = false);
+    
     const   GLuint  getProgram() const { return m_program; };
     const   GLuint  getFragmentShader() const { return m_fragmentShader; };
     const   GLuint  getVertexShader() const { return m_vertexShader; };
@@ -43,9 +44,8 @@ public:
     const std::string& getVertexSource() const { return m_vertexSource; };
 
     bool    inUse() const;
-    bool    isDirty() const { return m_program == 0 || m_needsReloading || m_defineChange; }
-    bool    isLoaded() const;
-
+    bool    loaded() const;
+   
     void    setUniform(const std::string& _name, int _x);
     void    setUniform(const std::string& _name, int _x, int _y);
     void    setUniform(const std::string& _name, int _x, int _y, int _z);
@@ -85,23 +85,16 @@ public:
 
     size_t  textureIndex;
 
-protected:
+private:
     GLuint      compileShader(const std::string& _src, GLenum _type, bool _verbose);
     GLint       getUniformLocation(const std::string& _uniformName) const;
 
-    std::string m_defineStack;
     std::string m_fragmentSource;
     std::string m_vertexSource;
-
-    std::string m_previousFragmentSource;
-    std::string m_previousVertexSource;
-
+    
     GLuint      m_program;
     GLuint      m_fragmentShader;
     GLuint      m_vertexShader;
-
-    ShaderErrorResolve m_error_screen;
-    bool        m_needsReloading;
 };
 
 }

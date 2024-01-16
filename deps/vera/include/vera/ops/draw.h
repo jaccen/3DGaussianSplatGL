@@ -56,7 +56,6 @@ void fill( float _red, float _green, float _blue, float _alpha);
 void fill( const glm::vec3& _color );
 void fill( const glm::vec4& _color );
 void noFill();
-const glm::vec4& getFillColor();
 
 void stroke( float _brightness );
 void stroke( float _red, float _green, float _blue);
@@ -65,7 +64,6 @@ void stroke( const glm::vec3& _color );
 void stroke( const glm::vec4& _color );
 void noStroke();
 void strokeWeight(float _weight);
-const glm::vec4& getStrokeColor();
 
 // MATRICES
 // -----------------------------
@@ -132,8 +130,6 @@ void lineBoundingBox(const glm::vec4& _bbox, Shader* _program = nullptr);
 void triangles(const std::vector<glm::vec2>& _positions, Shader* _program = nullptr);
 void triangles(const std::vector<glm::vec3>& _positions, Shader* _program = nullptr);
 
-void rectAlign(HorizontalAlign _align);
-void rectAlign(VerticalAlign _align);
 void rect(float _x, float _y, float _w, float _h, Shader* _program = nullptr);
 void rect(const glm::vec2& _pos, const glm::vec2& _size, Shader* _program = nullptr);
 
@@ -193,8 +189,6 @@ Vbo* getBillboard();
 // -----------------------------
 Font* getFont();
 Font* getFont(const std::string& _name);
-float getFontHeight();
-
 Font* loadFont(const std::string& _file, const std::string& _name = "default");
 void  addFont(Font& _font, const std::string _name);
 void  addFont(Font* _font, const std::string _name);
@@ -209,8 +203,8 @@ void  addFont(Font* _font, const std::string _name);
 // textWrap()
 
 Font* textFont(const std::string& _name);
-void textAlign(HorizontalAlign _align, Font* _font = nullptr);
-void textAlign(VerticalAlign _align, Font* _font = nullptr);
+void textAlign(FontHorizontalAlign _align, Font* _font = nullptr);
+void textAlign(FontVerticalAlign _align, Font* _font = nullptr);
 void textAngle(float _angle, Font* _font = nullptr);
 void textSize(float _size, Font* _font = nullptr);
 void text(const std::string& _text, const glm::vec2& _pos, Font* _font = nullptr );
@@ -231,10 +225,8 @@ Shader  loadShader(const std::string& _fragFile, const std::string& _vertFile);
 Shader  createShader(const std::string& _fragSrc = "", const std::string& _vertSrc = "");
 Shader  createShader(DefaultShaders _frag, DefaultShaders _vert);
 
-void    addShader(const std::string& _name, Shader& _shader);
-void    addShader(const std::string& _name, Shader* _shader);
-void    addShader(const std::string& _name, const std::string& _fragSrc = "", const std::string& _vertSrc = "");
-
+void    addShader(Shader& _shader, const std::string& _name);
+void    addShader(Shader* _shader, const std::string& _name);
 Shader* getShader();
 Shader* getShader(const std::string& _name);
 Shader* getFillShader();
@@ -246,12 +238,8 @@ void    shader(const std::string& _name);
 
 // TEXTURES
 // -----------------------------
-void    addTexture(const std::string& _name, const std::string& _filename, bool _vFlip = false, TextureFilter _filter = LINEAR, TextureWrap _wrap = REPEAT);
-void    addTexture(const std::string& _name, const vera::Image& _image, TextureFilter _filter = LINEAR, TextureWrap _wrap = REPEAT);
-Texture* getTexture(const std::string& _name);
-void    texture(Texture& _texture, const std::string _uniform_name = "");
-void    texture(Texture* _texture, const std::string _uniform_name = "");
-void    texture(const std::string _name, const std::string _uniform_name = "");
+void texture(Texture& _texture, const std::string _name = "");
+void texture(Texture* _texture, const std::string _name = "");
 // textureMode()
 // textureWrap()
 
@@ -319,7 +307,6 @@ void addLabel(std::function<std::string(void)> _func, glm::vec3* _position, Labe
 void addLabel(std::function<std::string(void)> _func, Node* _node, LabelType _type = LABEL_CENTER, float _margin = 0.0f);
 void addLabel(std::function<std::string(void)> _func, Model* _model, LabelType _type = LABEL_CENTER, float _margin = 0.0f);
 void labels();
-void cleanLabels();
 int labelAt(float _x, float _y);
 Label* label(size_t _index);
 

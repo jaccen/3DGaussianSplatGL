@@ -35,17 +35,15 @@ uniform vec4        u_color;
 uniform vec2        u_scale;
 
 uniform float       u_depth;
-uniform float       u_area;
-uniform float       u_cameraNearClip;
-uniform float       u_cameraFarClip;
-uniform float       u_cameraDistance;
+// uniform float       u_cameraNearClip;
+// uniform float       u_cameraFarClip;
+// uniform float       u_cameraDistance;
 
 varying vec2        v_texcoord;
 
-float linearizeDepth(float depth) {
-    depth = 2.0 * depth - 1.0;
-    return (2.0 * u_cameraNearClip * u_cameraFarClip) / (u_cameraFarClip + u_cameraNearClip - depth * (u_cameraFarClip - u_cameraNearClip));
-}
+// float linearizeDepth(float zoverw) {
+// 	return (2.0 * u_cameraNearClip) / (u_cameraFarClip + u_cameraNearClip - zoverw * (u_cameraFarClip - u_cameraNearClip));
+// }
 
 vec3 heatmap(float v) {
     vec3 r = v * 2.1 - vec3(1.8, 1.14, 0.3);
@@ -60,9 +58,11 @@ void main(void) {
     color += texture2D(u_tex0, st);
     
     if (u_depth > 0.0) {
-        float depth = color.r;
-        color.rgb = vec3( depth );
-        color.rgb = heatmap( fract(linearizeDepth(depth) * 0.1) );
+        color.rgb = vec3( color.r );
+    //     color.r = linearizeDepth(color.r) * u_cameraFarClip;
+    //     color.rgb = heatmap(1.0 - (color.r - u_cameraDistance) * 0.01);
+    //     color.rgb = vec3( 1.0 - linearizeDepth( color.r ) );
+    //     color.rgb = heatmap( color.r );
     }
 
     if (u_tex0TotalFrames > 0.0)

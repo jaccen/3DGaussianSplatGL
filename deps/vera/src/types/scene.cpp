@@ -32,8 +32,6 @@ Scene::Scene():
     activeCubemap(nullptr), 
     activeCamera(nullptr),
     activeFont(nullptr),
-    m_skyboxSize(1024),
-    m_skyboxFlip(false),
     m_streamsPrevs(0), 
     m_streamsPrevsChange(false) {
     
@@ -75,7 +73,7 @@ void Scene::load(const std::string& _filename, bool _verbose) {
 
 void Scene::update() {
     if (m_skybox.change) {
-        cubemaps["default"]->load(&m_skybox, m_skyboxSize, m_skyboxFlip);
+        cubemaps["default"]->load(&m_skybox);
         m_skybox.change = false;
     }
 
@@ -91,6 +89,7 @@ void Scene::update() {
 
 void Scene::clear() {
     clearTextures();
+    clearStreams();
 
     clearCubemaps();
     
@@ -155,40 +154,6 @@ bool Scene::addTexture(const std::string& _name, const std::string& _path, bool 
     return false;
 }
 
-bool Scene::addTexture(const std::string& _name, const Image& _image, bool _flip, bool _verbose) {
-    if (textures.find(_name) == textures.end()) {
-        Texture* tex = new Texture();
-
-        // TODO:
-        //  - flip
-
-        // load an image into the texture
-        if (tex->load(_image)) {
-            
-            // the image is loaded finish add the texture to the uniform list
-            textures[_name] = tex;
-            
-            if (_verbose) {
-                std::cout << "uniform sampler2D   " << _name  << ";"<< std::endl;
-                std::cout << "uniform vec2        " << _name  << "Resolution;"<< std::endl;
-            }
-
-            return true;
-        }
-        else
-            delete tex;
-    }
-    else {
-        // TODO:
-        //  - flip
-        //  - error handling
-
-        textures[_name]->load(_image);
-        Texture* tex = new Texture();
-    }
-    return false;
-}
-
 bool Scene::addBumpTexture(const std::string& _name, const std::string& _path, bool _flip, bool _verbose) {
     if (textures.find(_name) == textures.end()) {
         struct stat st;
@@ -234,7 +199,6 @@ void Scene::clearTextures() {
     for (TexturesMap::iterator it = textures.begin(); it != textures.end(); ++it)
         delete (it->second);
     textures.clear();
-    streams.clear();
 }
 
 bool Scene::addStreamingTexture( const std::string& _name, const std::string& _url, bool _vflip, bool _device, bool _verbose) {
@@ -464,6 +428,12 @@ void Scene::setStreamsPrevs( size_t _total ) {
     m_streamsPrevsChange = true;
 }
 
+void Scene::clearStreams() {
+    for (TextureStreamsMap::iterator it = streams.begin(); it != streams.end(); ++it)
+        delete (it->second);
+    streams.clear();
+}
+
 void Scene::printStreams() {
     for (TextureStreamsMap::iterator it = streams.begin(); it != streams.end(); ++it) {
         std::cout << "uniform sampler2D " << it->first << "; // " << it->second->getFilePath() << std::endl;
@@ -515,14 +485,6 @@ void Scene::printCubemaps() {
     if (activeCubemap) {
         std::cout << "uniform samplerCube u_cubeMap; // " << activeCubemap->getFilePath() << std::endl;
         std::cout << "uniform vec3        u_SH[9]; // " << std::endl;
-    }
-}
-
-void Scene::printCubemapSH(){
-    if (activeCubemap) {
-        for (size_t i = 0; i < 9; i++) {
-            std::cout << "u_SH[" << i << "] = vec3(" << activeCubemap->SH[i].x << ", " << activeCubemap->SH[i].y << " , " << activeCubemap->SH[i].z << ");" << std::endl;
-        }
     }
 }
 
