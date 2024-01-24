@@ -1,62 +1,30 @@
-cmake_minimum_required(VERSION 3.2)
-
-project(3DGaussianSplatGL LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 17)
+cmake_minimum_required(VERSION 3.21)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+enable_testing()
 
-add_compile_options(-DGLM_FORCE_CXX11 -DGLM_FORCE_SWIZZLE )
+project(tinyEngine)
 
-# The compiled VERA 
-add_subdirectory(deps)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(Common)
 
-file(GLOB ROOT_SOURCE 
-    "${PROJECT_SOURCE_DIR}/src/*.cpp"
-)
+assert_outsource_build()
 
-add_executable(3DGaussianSplatGL
-    ${ROOT_SOURCE}
-)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set_target_properties(3DGaussianSplatGL PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-)
+ if(EMSCRIPTEN)
+     message(STATUS "Emscripten compiler build")
+     message(STATUS "C compiler path: ${CMAKE_C_COMPILER}")
+     message(STATUS "C++ compiler path: ${CMAKE_CXX_COMPILER}")
+     set(OUTPUT_DIR emcc)
+ else()
+     set(OUTPUT_DIR msvc)
+ endif()
 
-# copy all files on assets on the build folder
-file(COPY   assets/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
+ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/${OUTPUT_DIR}")
+ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/${OUTPUT_DIR}")
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/${OUTPUT_DIR}")
 
-if (EMSCRIPTEN)
-
-    # # create a hello_world.html 
-    # set_target_properties(hello_world PROPERTIES SUFFIX ".html")
-
-    # copy the index.html 
-    file(COPY   assets/wasm/index.html DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
-    file(COPY   assets/wasm/fullscreen.html DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
-    file(COPY   assets/wasm/thumbnail.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
-
-    # set(LFLAGS "${LFLAGS} -pthread")
-    set(LFLAGS "${LFLAGS} -s USE_PTHREADS=0")
-    set(LFLAGS "${LFLAGS} -s WASM=1")
-    set(LFLAGS "${LFLAGS} -s USE_GLFW=3")
-    # set(LFLAGS "${LFLAGS} -s FULL_ES2=1")
-    # set(LFLAGS "${LFLAGS} -s FULL_ES3=1")
-    # set(LFLAGS "${LFLAGS} -s MIN_WEBGL_VERSION=2")
-    set(LFLAGS "${LFLAGS} -s MAX_WEBGL_VERSION=2")
-    # set(LFLAGS "${LFLAGS} -s WEBGL2_BACKWARDS_COMPATIBILITY_EMULATION=1")
-    set(LFLAGS "${LFLAGS} -s ALLOW_MEMORY_GROWTH=1")
-    # set(LFLAGS "${LFLAGS} -s NO_DYNAMIC_EXECUTION=1")
-    set(LFLAGS "${LFLAGS} -s ASYNCIFY")
-
-    set(LFLAGS "${LFLAGS} --preload-file earth-water.png")
-    
-    set_target_properties(3DGaussianSplatGL PROPERTIES LINK_FLAGS "${LFLAGS}")
-    target_link_libraries(3DGaussianSplatGL PRIVATE vera glfw webxr)
-    
-else()
-    target_link_libraries(3DGaussianSplatGL PRIVATE vera  )
-
-endif()
-
-
+add_subdirectory(src/app)
+add_subdirectory(src/runtime)
+#add_subdirectory(src/editor)

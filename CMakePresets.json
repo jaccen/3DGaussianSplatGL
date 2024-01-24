@@ -1,0 +1,83 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows-default",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ]
+        }
+      }
+    },
+    {
+      "name": "win-deb",
+      "inherits": "windows-default",
+      "displayName": "Win64 Debug (win-deb)",
+      "description": "Windows x64 Debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "win-reldeb",
+      "inherits": "windows-default",
+      "displayName": "Win64 RelWithDebInfo (win-reldeb)",
+      "description": "Windows x64 RelWithDebInfo",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "linux-default",
+      "hidden": true,
+      "displayName": "Linux Debug",
+      "description": "Sets Ninja generator, compilers, build and install directory, debug build type",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Linux" ]
+        },
+        "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+          "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}"
+       }
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "windows-default"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "windows-default",
+      "output": {"outputOnFailure": true},
+      "execution": {
+        "noTestsAction": "error", 
+        "stopOnFailure": true
+      }
+    }
+  ]
+}
