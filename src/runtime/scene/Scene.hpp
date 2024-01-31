@@ -15,7 +15,7 @@ namespace jaccen
     {
     public:
         Scene();
-        ~Scene();
+        virtual ~Scene();
         Scene(Scene&&) = default;
         Scene& operator=(Scene&&) = default;
 

@@ -13,6 +13,7 @@ namespace jaccen
             // Read and build a new shader.
             Shader(const std::string& vertexPath, const std::string& fragmentPath);
             ~Shader();
+            void AddMacro(const std::string& key, const std::string& value);
             // Move only.
             Shader(const Shader&) = delete;
             Shader& operator=(const Shader&) = delete;

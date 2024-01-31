@@ -4,27 +4,50 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 enable_testing()
 
 project(tinyEngine)
+add_subdirectory(lib)
+# The main executable
+add_executable(gaussian
+  src/Application.cpp
+  src/Application.cpp
+  src/MyApplication.cpp
+  src/MyApplication.cpp
+  src/glError.hpp
+  src/glError.cpp
+  src/main.cpp
+  src/Shader.hpp
+  src/Shader.cpp
+  src/texture.h
+  src/texture.cpp
+)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(Common)
+set_property(TARGET gaussian PROPERTY CXX_STANDARD 17)
+target_compile_options(gaussian PRIVATE -Wall)
 
-assert_outsource_build()
+add_definitions(-DGLEW_STATIC)
+add_subdirectory(lib/glfw EXCLUDE_FROM_ALL)
+add_subdirectory(lib/glew EXCLUDE_FROM_ALL)
+add_subdirectory(lib/glm EXCLUDE_FROM_ALL)
+add_subdirectory(lib/stb EXCLUDE_FROM_ALL)
 
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set(STB_DIR "${CMAKE_SOURCE_DIR}/lib/stb")
+set(STB_SRC "${STB_DIR}/stb_image.h")
+assign_source_group(${STB_DIR} ${STB_SRC})
 
- if(EMSCRIPTEN)
-     message(STATUS "Emscripten compiler build")
-     message(STATUS "C compiler path: ${CMAKE_C_COMPILER}")
-     message(STATUS "C++ compiler path: ${CMAKE_CXX_COMPILER}")
-     set(OUTPUT_DIR emcc)
- else()
-     set(OUTPUT_DIR msvc)
- endif()
+target_link_libraries(gaussian
+  PRIVATE glfw
+  PRIVATE libglew_static
+  PRIVATE glm
+  PRIVATE stb
+)
 
- set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/${OUTPUT_DIR}")
- set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/${OUTPUT_DIR}")
- set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/${OUTPUT_DIR}")
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/asset.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/src/asset.hpp
+)
 
-add_subdirectory(src/app)
-add_subdirectory(src/runtime)
-#add_subdirectory(src/editor)
+target_include_directories(gaussian
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/src
+  PRIVATE ${STB_DIR}
+)
+

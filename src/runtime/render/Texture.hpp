@@ -7,6 +7,31 @@ namespace jaccen
 {
     namespace gfx
     {
+        enum class FilterType
+        {
+            Nearest = 0,
+            Linear,
+            NearestMipmapNearest,
+            LinearMipmapNearest,
+            NearestMipmapLinear,
+            LinearMipmapLinear
+        };
+
+        enum class WrapType
+        {
+            Repeat = 0,
+            MirroredRepeat,
+            ClampToEdge,
+            MirrorClampToEdge
+        };
+        struct Params
+        {
+            FilterType minFilter;
+            FilterType magFilter;
+            WrapType sWrap;
+            WrapType tWrap;
+        };
+
         class Texture
         {
         public:
@@ -18,11 +43,13 @@ namespace jaccen
             Texture(Texture&& other) = default;
             Texture& operator=(Texture&& other) = default;
 
+            void  Bind(int unit) const;
             const Id& id() const { return m_id; }
 
         private:
             // The OpenGL texture ID.
             Id m_id = Id::Invalid;
+            bool hasAlphaChannel;
         };
     }
 }
